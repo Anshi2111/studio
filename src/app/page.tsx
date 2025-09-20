@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { ArrowRight, BarChart, HeartPulse, ShieldCheck, Stethoscope, Pill } from 'lucide-react';
+import { ArrowRight, BarChart, HeartPulse, ShieldCheck, Stethoscope, Pill, LogIn } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -14,13 +14,23 @@ export default function Home() {
           <nav className="hidden md:flex items-center gap-6 text-lg font-medium text-slate-800">
             <Link href="/" className="hover:text-primary transition-colors">Home</Link>
             <Link href="#features" className="hover:text-primary transition-colors">Features</Link>
-            <Link href="/patient/dashboard" className="hover:text-primary transition-colors">Patient Dashboard</Link>
-            <Link href="/pharmacy/dashboard" className="hover:text-primary transition-colors">Pharmacy Dashboard</Link>
             <Link href="#about" className="hover:text-primary transition-colors">About Us</Link>
+            <Link href="#contact" className="hover:text-primary transition-colors">Contact</Link>
           </nav>
-          <Button asChild>
-            <Link href="#contact">Contact</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/login/patient">
+                <LogIn className="mr-2 h-4 w-4" />
+                Patient Login
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/login/pharmacist">
+                <LogIn className="mr-2 h-4 w-4" />
+                Pharmacist Login
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
       
