@@ -5,128 +5,105 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Video } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
-// Mock functions, same as in add-medicine-client
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
-
-const detectBarcode = (imageDataUri: string): string | null => {
-    console.log("Simulating barcode detection for sale:", imageDataUri.substring(0, 30) + "...");
-    // Return a mock barcode. In a real app, this would detect a barcode from the image.
-    // To test a "found" item, the mock inventory needs to have this barcode.
-    // Let's assume the mock inventory uses the medicine name as a key for simplicity.
-    const mockInventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-    if (mockInventory.length > 0) {
-        return mockInventory[0].medName; // Return the name of the first item as a mock barcode
-    }
-    return `UNKNOWN_${Date.now()}`;
-};
-
+const SALES_RECORDS_KEY = 'healthure-sales-records';
 
 export function RecordSaleClient() {
-  const [isScanning, startScanTransition] = useTransition();
   const [isSaving, startSaveTransition] = useTransition();
   
   const [scannedMedicine, setScannedMedicine] = useState<{ name: string, expiryDate?: string, mfgDate?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [cameraLabel, setCameraLabel] = useState<string>('');
-  const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
   const [quantity, setQuantity] = useState('');
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Camera access is not supported by your browser.');
-        setHasCameraPermission(false);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          setCameraLabel(videoTrack.label);
-        }
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (e) {
-        console.error('Error accessing camera:', e);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
-        });
-      }
-    };
-    getCameraPermission();
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 5,
+        rememberLastUsedCamera: true,
+      },
+      /* verbose= */ false
+    );
+    scannerRef.current = scanner.html5Qrcode;
+
+    function onScanSuccess(decodedText: string, decodedResult: any) {
+        scanner.pause();
+        handleBarcodeScanned(decodedText);
+    }
+
+    function onScanFailure(error: any) {
+      // console.warn(`Code scan error = ${error}`);
+    }
+
+    scanner.render(onScanSuccess, onScanFailure);
+    
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      }
+      scanner.clear().catch(error => {
+        console.error("Failed to clear html5QrcodeScanner.", error);
+      });
     };
-  }, [toast]);
+  }, []);
 
-  const captureFrame = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
-  };
-
-  const handleScan = () => {
-    const imageDataUri = captureFrame();
-    if (!imageDataUri) return;
-
+  const handleBarcodeScanned = (barcode: string) => {
     setError(null);
     setScannedMedicine(null);
     resetForm();
 
-    startScanTransition(() => {
-      setTimeout(() => {
-        const detectedBarcode = detectBarcode(imageDataUri); // This is the medicine name in our mock setup
-        const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-        const foundItem = inventory.find((item: any) => item.medName.toLowerCase() === detectedBarcode?.toLowerCase());
+    const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+    const foundItem = inventory.find((item: any) => item.barcode && item.barcode.toLowerCase() === barcode.toLowerCase());
 
-        if (foundItem) {
-          setScannedMedicine({
-            name: foundItem.medName,
-            expiryDate: foundItem.expiryDate,
-            mfgDate: foundItem.mfgDate,
-          });
-          toast({
-            title: "Medicine Found!",
-            description: `${foundItem.medName} is ready to be sold.`,
-          });
-        } else {
-          setError('This medicine is not in the inventory. Please add it first using the "Add Medicine" page.');
-        }
-      }, 1000);
-    });
+    if (foundItem) {
+      setScannedMedicine({
+        name: foundItem.medName,
+        expiryDate: foundItem.expiryDate,
+        mfgDate: foundItem.mfgDate,
+      });
+      toast({
+        title: "Medicine Found!",
+        description: `${foundItem.medName} is ready to be sold.`,
+      });
+    } else {
+      setError(`Barcode "${barcode}" not found in inventory. Please add the medicine first.`);
+      toast({
+          variant: "destructive",
+          title: "Medicine Not Found",
+          description: "This barcode is not in your inventory system."
+      })
+    }
   };
 
   const resetForm = () => {
       setPatientPhone('');
       setQuantity('');
   };
+
+  const handleRescan = () => {
+      setScannedMedicine(null);
+      setError(null);
+      resetForm();
+      if (scannerRef.current) {
+          scannerRef.current.resume();
+      }
+  }
   
   const handleRecordSale = () => {
     if (!scannedMedicine) return;
 
     startSaveTransition(() => {
-        const SALES_RECORDS_KEY = 'healthure-sales-records';
         const salesRecords = JSON.parse(localStorage.getItem(SALES_RECORDS_KEY) || '[]');
         
         const newSale = {
@@ -142,7 +119,6 @@ export function RecordSaleClient() {
         salesRecords.unshift(newSale);
         localStorage.setItem(SALES_RECORDS_KEY, JSON.stringify(salesRecords));
         
-        console.log("Recording new sale:", newSale);
         toast({
             title: "Sale Recorded!",
             description: `Sale of ${scannedMedicine.name} to ${patientPhone} has been logged.`,
@@ -152,6 +128,9 @@ export function RecordSaleClient() {
 
         setScannedMedicine(null);
         resetForm();
+        if (scannerRef.current) {
+          scannerRef.current.resume();
+        }
     });
   };
 
@@ -170,27 +149,20 @@ export function RecordSaleClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-          <video ref={videoRef} className="w-full aspect-video rounded-md bg-slate-200" autoPlay muted playsInline />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
-          </div>
-           {cameraLabel && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
-              <Video className="h-3 w-3" />
-              <span>{cameraLabel}</span>
-            </div>
-          )}
-          {hasCameraPermission === false && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>Please allow camera access.</AlertDescription>
-            </Alert>
-          )}
+            <div id="reader" className="w-full"></div>
+            {error && !scannedMedicine && (
+                <Alert variant="destructive" className="mt-4">
+                    <ServerCrash className="h-4 w-4" />
+                    <AlertTitle>Scan Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
         </CardContent>
         <CardFooter>
-          <Button onClick={handleScan} disabled={isScanning || !hasCameraPermission} className="w-full">
-            {isScanning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</> : 'Scan Medicine'}
-          </Button>
+            <Button onClick={handleRescan} className="w-full" disabled={!scannedMedicine && !error}>
+                <ScanLine className="mr-2 h-4 w-4" />
+                Scan Next Item
+            </Button>
         </CardFooter>
       </Card>
 
@@ -205,28 +177,13 @@ export function RecordSaleClient() {
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            {!scannedMedicine && !isScanning && (
+            {!scannedMedicine && (
                  <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Info className="h-10 w-10" />
                         <p className="font-medium">Scan a medicine to begin.</p>
                     </div>
                 </div>
-            )}
-            {isScanning && (
-                 <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                        <p className="font-medium">Identifying medicine...</p>
-                    </div>
-                </div>
-            )}
-            {error && (
-                <Alert variant="destructive">
-                    <ServerCrash className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
             )}
             {scannedMedicine && (
                  <div className="space-y-4 animate-in fade-in-50">
