@@ -16,11 +16,11 @@ export function PatientDashboardClient() {
   const chartConfig = {
     systolic: {
       label: 'Systolic',
-      color: 'hsl(var(--chart-1))',
+      color: 'hsl(var(--chart-2))',
     },
     diastolic: {
       label: 'Diastolic',
-      color: 'hsl(var(--chart-2))',
+      color: 'hsl(var(--chart-3))',
     },
   };
 

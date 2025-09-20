@@ -34,12 +34,13 @@ export default function Home() {
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+             <div className="absolute inset-0 bg-primary/20" />
           </div>
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tighter mb-4 text-primary-foreground drop-shadow-lg">
+            <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tighter mb-4 text-gray-800 drop-shadow-lg">
               Intelligent Health, Simplified.
             </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-primary-foreground/90 mb-8 drop-shadow">
+            <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-700/90 mb-8 drop-shadow">
               MediSys connects patients and pharmacies with a seamless, AI-enhanced platform. Manage your health with confidence and clarity.
             </p>
             <div className="flex justify-center gap-4">
@@ -65,17 +66,17 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               <FeatureCard
-                icon={<Users className="h-8 w-8 text-primary" />}
+                icon={<Users className="h-8 w-8 text-blue-500" />}
                 title="Patient-Centric Dashboard"
                 description="View your appointments, prescriptions, and health data at a glance. Take control of your health journey."
               />
               <FeatureCard
-                icon={<Syringe className="h-8 w-8 text-primary" />}
+                icon={<Syringe className="h-8 w-8 text-red-500" />}
                 title="Pharmacy Operations Hub"
                 description="Streamline prescription management, track inventory in real-time, and gain insights with sales reports."
               />
               <FeatureCard
-                icon={<Bot className="h-8 w-8 text-primary" />}
+                icon={<Bot className="h-8 w-8 text-green-500" />}
                 title="AI Medication Guide"
                 description="Understand your medication better. Check for potential interactions and side effects with our AI assistant."
               />
