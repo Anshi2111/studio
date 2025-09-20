@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Keyboard } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Keyboard, Mail } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -27,6 +27,7 @@ export function RecordSaleClient() {
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
+  const [patientEmail, setPatientEmail] = useState('');
   const [quantity, setQuantity] = useState('');
 
   useEffect(() => {
@@ -103,6 +104,7 @@ export function RecordSaleClient() {
 
   const resetForm = () => {
       setPatientPhone('');
+      setPatientEmail('');
       setQuantity('');
       setManualBarcode('');
   };
@@ -120,21 +122,25 @@ export function RecordSaleClient() {
     startSaveTransition(() => {
         // --- Patient Account Linking Logic ---
         const patients = JSON.parse(localStorage.getItem(PATIENT_DATABASE_KEY) || '[]');
-        const patientExists = patients.some((p: any) => p.phone === patientPhone);
+        let patientRecord = patients.find((p: any) => p.phone === patientPhone);
 
-        if (!patientExists) {
-            const newPatient = {
+        if (!patientRecord) {
+            patientRecord = {
                 phone: patientPhone,
+                email: patientEmail,
                 name: `Patient ${patientPhone.slice(-4)}`, // Create a default name
                 createdAt: new Date().toISOString(),
             };
-            patients.push(newPatient);
-            localStorage.setItem(PATIENT_DATABASE_KEY, JSON.stringify(patients));
+            patients.push(patientRecord);
             toast({
                 title: "New Patient Created",
                 description: `A new patient record has been created for phone number ${patientPhone}.`,
             });
+        } else if (patientEmail && !patientRecord.email) {
+            // Update existing patient record with email if it's missing
+            patientRecord.email = patientEmail;
         }
+        localStorage.setItem(PATIENT_DATABASE_KEY, JSON.stringify(patients));
         // --- End Logic ---
 
         const salesRecords = JSON.parse(localStorage.getItem(SALES_RECORDS_KEY) || '[]');
@@ -143,6 +149,7 @@ export function RecordSaleClient() {
             id: `sale_${Date.now()}`,
             medicineName: scannedMedicine.name,
             patientPhone: patientPhone,
+            patientEmail: patientEmail,
             quantity: parseInt(quantity),
             dateSold: new Date().toISOString(),
             expiryDate: scannedMedicine.expiryDate,
@@ -240,6 +247,13 @@ export function RecordSaleClient() {
                         <div className="relative">
                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input id="patient-phone" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} placeholder="e.g., 123-456-7890" className="pl-10" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="patient-email">Patient's Email (Optional)</Label>
+                        <div className="relative">
+                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="patient-email" type="email" value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)} placeholder="e.g., patient@example.com" className="pl-10" />
                         </div>
                     </div>
                      <div className="space-y-2">

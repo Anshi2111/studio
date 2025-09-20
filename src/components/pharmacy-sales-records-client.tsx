@@ -12,6 +12,7 @@ interface SaleRecord {
     id: string;
     medicineName: string;
     patientPhone: string;
+    patientEmail?: string;
     quantity: number;
     dateSold: string;
     expiryDate?: string;
@@ -30,7 +31,8 @@ export function PharmacySalesRecordsClient() {
 
   const filteredRecords = salesRecords.filter(record => 
     record.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.patientPhone.includes(searchTerm)
+    record.patientPhone.includes(searchTerm) ||
+    (record.patientEmail && record.patientEmail.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -39,7 +41,7 @@ export function PharmacySalesRecordsClient() {
             <CardTitle>Sales History</CardTitle>
             <CardDescription>A log of all past sales transactions.</CardDescription>
              <Input 
-                placeholder="Search by medicine or buyer phone..."
+                placeholder="Search by medicine, phone, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-sm mt-2"
@@ -51,6 +53,7 @@ export function PharmacySalesRecordsClient() {
                     <TableRow>
                         <TableHead>Medicine Name</TableHead>
                         <TableHead>Buyer Phone</TableHead>
+                        <TableHead>Buyer Email</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Date of Sale</TableHead>
                         <TableHead>Expiry Date</TableHead>
@@ -61,13 +64,14 @@ export function PharmacySalesRecordsClient() {
                         <TableRow key={record.id}>
                             <TableCell className="font-medium">{record.medicineName}</TableCell>
                             <TableCell>{record.patientPhone}</TableCell>
+                            <TableCell>{record.patientEmail || 'N/A'}</TableCell>
                             <TableCell>{record.quantity}</TableCell>
                             <TableCell>{format(new Date(record.dateSold), 'PPP p')}</TableCell>
                             <TableCell>{record.expiryDate ? format(new Date(record.expiryDate), 'PPP') : 'N/A'}</TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
                                 No sales records found.
                             </TableCell>
                         </TableRow>
