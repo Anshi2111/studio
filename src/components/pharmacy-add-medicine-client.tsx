@@ -3,34 +3,20 @@
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, Video, XCircle, CameraOff } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
-// This is a mock barcode detection function. 
-const detectBarcode = (imageDataUri: string): string | null => {
-    console.log("Simulating barcode detection:", imageDataUri.substring(0, 30) + "...");
-    // To simulate different scenarios, we can return different values.
-    // In a real app, you'd use a library like `zxing-js`.
-    // Let's return a "new" barcode every time to test the "add manually" flow.
-    return `NEW_BARCODE_${Date.now()}`;
-};
-
 export function AddMedicineClient() {
-  const [isScanning, startScanTransition] = useTransition();
   const [isSaving, startSaveTransition] = useTransition();
   const [scannedData, setScannedData] = useState<{ barcode: string, name?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
-  const [cameraLabel, setCameraLabel] = useState<string>('');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   // Form state
   const [medName, setMedName] = useState('');
@@ -39,133 +25,64 @@ export function AddMedicineClient() {
   const [expiryDate, setExpiryDate] = useState('');
   const [quantity, setQuantity] = useState('');
   const [supplier, setSupplier] = useState('');
-
-  const getCameraPermission = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Camera access is not supported by your browser.');
-        setHasCameraPermission(false);
-        return;
-    }
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        streamRef.current = stream;
-        setHasCameraPermission(true);
-        setIsCameraActive(true);
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-            setCameraLabel(videoTrack.label);
-        }
-        if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-        }
-    } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        setIsCameraActive(false);
-        toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-        });
-    }
-  };
-
-  const stopCamera = () => {
-      if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-      }
-      if (videoRef.current) {
-          videoRef.current.srcObject = null;
-      }
-      setIsCameraActive(false);
-      setCameraLabel('');
-  }
+  const [barcode, setBarcode] = useState('');
 
   useEffect(() => {
-    // We don't automatically request permission on load anymore
-    // User will click a button to start the camera
-    const checkInitialPermission = async () => {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            try {
-                // Check if we already have permission without prompting
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                if (devices.some(device => device.kind === 'videoinput' && device.label)) {
-                     setHasCameraPermission(true);
-                }
-            } catch(e) {
-                setHasCameraPermission(false);
-            }
-        } else {
-            setHasCameraPermission(false);
-        }
-    };
-    checkInitialPermission();
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 5,
+        rememberLastUsedCamera: true,
+      },
+      /* verbose= */ false
+    );
+    scannerRef.current = scanner.html5Qrcode;
+
+    function onScanSuccess(decodedText: string) {
+      handleBarcodeDetection(decodedText, scanner);
+    }
+
+    function onScanFailure(error: any) {
+      // console.warn(`Code scan error = ${error}`);
+    }
+
+    scanner.render(onScanSuccess, onScanFailure);
 
     return () => {
-      stopCamera();
+      scanner.clear().catch(error => {
+        console.error("Failed to clear html5QrcodeScanner.", error);
+      });
     };
   }, []);
+  
+  const handleBarcodeDetection = (decodedText: string, scanner: Html5QrcodeScanner) => {
+    scanner.pause();
+    setBarcode(decodedText);
 
-  const captureFrame = () => {
-    if (!videoRef.current || !isCameraActive) {
-      setError('Video feed not available.');
-      return;
+    const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+    const foundItem = inventory.find((item: any) => item.barcode === decodedText);
+
+    if (foundItem) {
+        setScannedData({ barcode: decodedText, name: foundItem.medName });
+        toast({
+            title: "Medicine Found!",
+            description: `${foundItem.medName} is already in the system. You can update its inventory.`,
+        });
+        setMedName(foundItem.medName);
+    } else {
+        setScannedData({ barcode: decodedText });
+        toast({
+            variant: 'default',
+            title: "New Medicine Detected",
+            description: "This barcode isn't in your system. Please add its details manually.",
+        });
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const context = canvas.getContext('2d');
-    if (!context) {
-      setError('Could not get canvas context.');
-      return;
-    }
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
-  };
+  }
 
-  const handleScanClick = () => {
-    if (!isCameraActive) {
-        getCameraPermission();
-        return;
-    }
-
-    const imageDataUri = captureFrame();
-    if (!imageDataUri) return;
-
-    setError(null);
-    setScannedData(null);
-    resetForm();
-
-    startScanTransition(() => {
-      setTimeout(() => {
-        const detectedBarcode = detectBarcode(imageDataUri);
-        const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-        const foundItem = inventory.find((item: any) => item.barcode === detectedBarcode);
-
-        if (detectedBarcode) {
-          if (foundItem) {
-            setScannedData({ barcode: detectedBarcode, name: foundItem.medName });
-             toast({
-                title: "Medicine Found!",
-                description: `${foundItem.medName} is already in the system. You can update its inventory.`,
-            });
-            setMedName(foundItem.medName);
-          } else {
-            setScannedData({ barcode: detectedBarcode });
-             toast({
-                variant: 'default',
-                title: "New Medicine Detected",
-                description: "This barcode isn't in your system. Please add its details manually.",
-            });
-          }
-        } else {
-          setError('Could not detect a barcode. Please try again with a clearer image.');
-        }
-        stopCamera();
-      }, 1000);
-    });
-  };
 
   const resetForm = () => {
       setMedName('');
@@ -174,13 +91,16 @@ export function AddMedicineClient() {
       setExpiryDate('');
       setQuantity('');
       setSupplier('');
+      setBarcode('');
   }
 
   const handleClear = () => {
     resetForm();
     setScannedData(null);
     setError(null);
-    if(isCameraActive) stopCamera();
+    if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.resume();
+    }
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item or enter details manually.",
@@ -189,15 +109,12 @@ export function AddMedicineClient() {
 
   const handleSaveMedicine = () => {
       startSaveTransition(() => {
-          // Get current inventory or initialize an empty array
           const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
           
-          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: scannedData?.barcode };
+          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: barcode };
           
-          // Add the new medicine to the inventory array
           inventory.push(newMedicine);
           
-          // Save the updated inventory back to localStorage
           localStorage.setItem(MOCK_INVENTORY_KEY, JSON.stringify(inventory));
 
           console.log("Saving new medicine:", newMedicine);
@@ -208,10 +125,13 @@ export function AddMedicineClient() {
           });
           setScannedData(null);
           resetForm();
+          if (scannerRef.current) {
+            scannerRef.current.resume();
+          }
       });
   }
 
-  const isFormValid = medName && batchNo && mfgDate && expiryDate && quantity && supplier;
+  const isFormValid = medName && batchNo && mfgDate && expiryDate && quantity && supplier && barcode;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -222,51 +142,12 @@ export function AddMedicineClient() {
             Scan Barcode
           </CardTitle>
           <CardDescription>
-            Point your camera at a medicine's barcode to begin.
+            Place a medicine's barcode in the viewfinder to scan it.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-          <video ref={videoRef} className="w-full aspect-video rounded-md bg-slate-200" autoPlay muted playsInline />
-          {isCameraActive && 
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
-            </div>
-          }
-           {!isCameraActive && hasCameraPermission !== false &&
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-200 rounded-md">
-                <div className="text-center text-muted-foreground">
-                    <CameraOff className="h-12 w-12 mx-auto mb-2"/>
-                    <p>Camera is off</p>
-                </div>
-            </div>
-           }
-          {cameraLabel && isCameraActive && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
-              <Video className="h-3 w-3" />
-              <span>{cameraLabel}</span>
-            </div>
-          )}
-          {hasCameraPermission === false && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>
-                Please allow camera access.
-              </AlertDescription>
-            </Alert>
-          )}
+          <div id="reader" className="w-full"></div>
         </CardContent>
-        <CardFooter className="grid grid-cols-2 gap-2">
-          <Button onClick={handleScanClick} disabled={isScanning} className="w-full">
-            {isScanning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</> 
-            : isCameraActive ? 'Scan Barcode' 
-            : 'Start Scanning'
-            }
-          </Button>
-          <Button onClick={stopCamera} variant="outline" disabled={!isCameraActive}>
-            <CameraOff className="mr-2 h-4 w-4" />
-            Stop Camera
-          </Button>
-        </CardFooter>
       </Card>
 
       <Card className="shadow-lg">
@@ -280,7 +161,7 @@ export function AddMedicineClient() {
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            {!scannedData && !isScanning && (
+            {!scannedData && (
                  <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Info className="h-10 w-10" />
@@ -288,16 +169,12 @@ export function AddMedicineClient() {
                     </div>
                 </div>
             )}
-             {isScanning && (
-                 <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                        <p className="font-medium">Checking database...</p>
-                    </div>
-                </div>
-            )}
              {scannedData && (
                  <div className="space-y-3 animate-in fade-in-50">
+                    <div className="space-y-1">
+                        <Label htmlFor="barcode">Barcode</Label>
+                        <Input id="barcode" value={barcode} readOnly disabled />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <Label htmlFor="med-name">Medicine Name</Label>
@@ -338,7 +215,7 @@ export function AddMedicineClient() {
                 </Button>
                 <Button onClick={handleClear} variant="outline">
                     <XCircle className="mr-2 h-4 w-4" />
-                    Clear Form
+                    Clear & Rescan
                 </Button>
             </CardFooter>
          )}
