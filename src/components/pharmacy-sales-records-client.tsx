@@ -14,6 +14,7 @@ interface SaleRecord {
     patientPhone: string;
     quantity: number;
     dateSold: string;
+    expiryDate?: string;
 }
 
 export function PharmacySalesRecordsClient() {
@@ -52,6 +53,7 @@ export function PharmacySalesRecordsClient() {
                         <TableHead>Buyer Phone</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Date of Sale</TableHead>
+                        <TableHead>Expiry Date</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -61,10 +63,11 @@ export function PharmacySalesRecordsClient() {
                             <TableCell>{record.patientPhone}</TableCell>
                             <TableCell>{record.quantity}</TableCell>
                             <TableCell>{format(new Date(record.dateSold), 'PPP p')}</TableCell>
+                            <TableCell>{record.expiryDate ? format(new Date(record.expiryDate), 'PPP') : 'N/A'}</TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
                                 No sales records found.
                             </TableCell>
                         </TableRow>
