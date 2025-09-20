@@ -26,12 +26,12 @@ export default function Home() {
       
       <main className="flex-1">
         <section className="relative py-28 md:py-36 lg:py-48 bg-white">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-12">
-            <div className="text-center md:text-left">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-extrabold text-[#1A3D7C] tracking-tight mb-6">
                 Medicine Safety, Made Simple.
               </h1>
-              <p className="max-w-xl mx-auto md:mx-0 text-lg md:text-xl text-slate-600 mb-10">
+              <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-600 mb-10">
                 Your integrated health partner for seamless patient and pharmacy management. Experience the future of healthcare, today.
               </p>
               <Button size="lg" className="bg-[#1ABC9C] hover:bg-[#16a085] text-white" asChild>
@@ -39,9 +39,6 @@ export default function Home() {
                   Explore Patient Portal <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-            </div>
-            <div className="relative h-64 md:h-full flex items-center justify-center">
-               <Image src="https://picsum.photos/seed/medicine-packet/600/400" alt="Medicine packet" width={600} height={400} className="rounded-lg shadow-xl" data-ai-hint="medicine packet" />
             </div>
           </div>
         </section>
