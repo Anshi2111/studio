@@ -1,18 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useTransition } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { mockUserMedications } from '@/lib/mock-data';
 import type { UserMedication } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Bot, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
+import { useToast } from "@/hooks/use-toast";
 
 function getExpiryBadge(expiryDate: string): React.ReactNode {
+    if (!expiryDate) {
+        return <Badge variant="outline">No Expiry Date</Badge>;
+    }
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today's date
     const expiry = new Date(expiryDate);
     const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
 
@@ -29,21 +35,52 @@ function getExpiryBadge(expiryDate: string): React.ReactNode {
 export function MedicineCabinetClient() {
   const [userMedications, setUserMedications] = useState<UserMedication[]>(mockUserMedications);
   const [newMedName, setNewMedName] = useState('');
+  const [newMedPurchaseDate, setNewMedPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [newMedExpiry, setNewMedExpiry] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
   const handleAddMedication = () => {
-    if (newMedName && newMedExpiry) {
+    if (newMedName && newMedPurchaseDate) {
       const newMed: UserMedication = {
         id: `um${userMedications.length + 1}`,
         name: newMedName,
-        purchaseDate: new Date().toISOString().split('T')[0],
+        purchaseDate: newMedPurchaseDate,
         expiryDate: newMedExpiry,
       };
-      setUserMedications([...userMedications, newMed]);
+      setUserMedications([...userMedications, newMed].sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()));
       setNewMedName('');
+      setNewMedPurchaseDate(new Date().toISOString().split('T')[0]);
       setNewMedExpiry('');
     }
   };
+
+  const handleFindExpiry = () => {
+    if (!newMedName || !newMedPurchaseDate) {
+        toast({
+            variant: 'destructive',
+            title: 'Missing Information',
+            description: 'Please enter the medicine name and purchase date.',
+        });
+        return;
+    }
+    startTransition(async () => {
+        const response = await findMedicationExpiryDate({ medicationName: newMedName, purchaseDate: newMedPurchaseDate });
+        if (response.success && response.data?.expiryDate) {
+            setNewMedExpiry(response.data.expiryDate);
+            toast({
+                title: 'Expiry Date Found!',
+                description: `The expiry date for ${newMedName} has been set to ${format(new Date(response.data.expiryDate), 'PPP')}.`,
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Expiry Date Not Found',
+                description: 'We couldn\'t find an expiry date for this medication based on the provided details.',
+            });
+        }
+    });
+  }
 
   return (
     <Card className="shadow-lg transition-all hover:shadow-xl">
@@ -54,7 +91,10 @@ export function MedicineCabinetClient() {
                     <div className="space-y-3">
                         {userMedications.map(med => (
                             <div key={med.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
-                                <span className="font-medium">{med.name}</span>
+                                <div>
+                                    <span className="font-medium">{med.name}</span>
+                                    <p className="text-xs text-muted-foreground">Purchased: {format(new Date(med.purchaseDate), "PPP")}</p>
+                                </div>
                                 {getExpiryBadge(med.expiryDate)}
                             </div>
                         ))}
@@ -68,10 +108,21 @@ export function MedicineCabinetClient() {
                         <Input id="med-name" placeholder="e.g., Tylenol, Vitamin C" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="med-expiry">Expiry Date</Label>
-                        <Input id="med-expiry" type="date" value={newMedExpiry} onChange={e => setNewMedExpiry(e.target.value)} />
+                        <Label htmlFor="med-purchase-date">Purchase Date</Label>
+                        <Input id="med-purchase-date" type="date" value={newMedPurchaseDate} onChange={e => setNewMedPurchaseDate(e.target.value)} />
                     </div>
-                    <Button onClick={handleAddMedication} className="w-full">
+                    <div className="space-y-2">
+                        <Label htmlFor="med-expiry">Expiry Date</Label>
+                        <div className="flex gap-2">
+                            <Input id="med-expiry" type="date" value={newMedExpiry} onChange={e => setNewMedExpiry(e.target.value)} placeholder="YYYY-MM-DD" />
+                            <Button variant="outline" onClick={handleFindExpiry} disabled={isPending}>
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Bot className="h-4 w-4"/>}
+                                <span className="ml-2 hidden sm:inline">Find with AI</span>
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Enter manually or let our AI find it for you.</p>
+                    </div>
+                    <Button onClick={handleAddMedication} className="w-full" disabled={!newMedName || !newMedPurchaseDate}>
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Add to Cabinet
                     </Button>

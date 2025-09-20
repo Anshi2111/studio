@@ -1,4 +1,4 @@
-import type { Appointment, Prescription, HealthStat, PharmacyPrescription, InventoryItem, SalesData, HealthGoal, UserMedication } from './types';
+import type { Appointment, Prescription, HealthStat, PharmacyPrescription, InventoryItem, SalesData, HealthGoal, UserMedication, SoldMedication } from './types';
 
 export const mockAppointments: Appointment[] = [
   { id: '1', doctor: 'Dr. Evelyn Reed', specialty: 'Cardiology', date: '2024-08-15', time: '10:00 AM', status: 'Upcoming' },
@@ -52,4 +52,11 @@ export const mockHealthGoals: HealthGoal[] = [
 export const mockUserMedications: UserMedication[] = [
     { id: 'um1', name: 'Advil', purchaseDate: '2024-07-01', expiryDate: '2025-06-01' },
     { id: 'um2', name: 'Benadryl', purchaseDate: '2024-06-15', expiryDate: '2024-08-30' },
+];
+
+export const mockSoldMedications: SoldMedication[] = [
+    { id: 'sm1', medicineName: 'Tylenol', dateSold: '2024-07-20', expiryDate: '2026-07-20', patientName: 'Jane Doe' },
+    { id: 'sm2', medicineName: 'Advil', dateSold: '2024-07-01', expiryDate: '2025-06-01', patientName: 'John Smith' },
+    { id: 'sm3', medicineName: 'Benadryl', dateSold: '2024-06-15', expiryDate: '2024-08-30', patientName: 'Emily Jones' },
+    { id: 'sm4', medicineName: 'Vitamin C', dateSold: '2024-07-25', expiryDate: '2025-01-25', patientName: 'Michael Brown' },
 ];

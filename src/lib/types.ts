@@ -49,8 +49,16 @@ export type HealthGoal = {
 };
 
 export type UserMedication = {
-    id: string;
+    id:string;
     name: string;
     purchaseDate: string;
     expiryDate: string;
+};
+
+export type SoldMedication = {
+    id: string;
+    medicineName: string;
+    dateSold: string;
+    expiryDate: string;
+    patientName?: string;
 };
