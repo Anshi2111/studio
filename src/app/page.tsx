@@ -29,7 +29,7 @@ export default function Home() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-12">
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-6xl font-extrabold text-[#1A3D7C] tracking-tight mb-6">
-                Caring for Health, Simplifying Pharmacy.
+                Medicine Safety, Made Simple.
               </h1>
               <p className="max-w-xl mx-auto md:mx-0 text-lg md:text-xl text-slate-600 mb-10">
                 Your integrated health partner for seamless patient and pharmacy management. Experience the future of healthcare, today.
@@ -56,7 +56,7 @@ export default function Home() {
         <section id="features" className="py-20 md:py-28 bg-[#F5F5F5]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Why Choose MediSys?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Why Choose Healthure?</h2>
               <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">Discover the powerful features that make health management intuitive and efficient.</p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -101,7 +101,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="pharmacy-dashboard" className="py-20 md:py-28 bg-[#F5F5F5]">
+        <section id="pharmacy-dashboard" className="py-20 md:py-28 bg-[#F5F5_F5]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
             <Card className="shadow-xl rounded-xl overflow-hidden order-last md:order-first">
                  <Image src="https://picsum.photos/seed/pharmacy-dash/800/600" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="pharmacy interior" />
@@ -121,8 +121,8 @@ export default function Home() {
         <section id="about" className="py-20 md:py-28 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">About MediSys</h2>
-                    <p className="mt-4 text-lg text-slate-500">At MediSys, we believe that managing your health should be simple, transparent, and empowering. Our mission is to bridge the gap between patients and pharmacies through innovative technology. We are a team of healthcare professionals, developers, and designers dedicated to creating a healthier future for everyone.</p>
+                    <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">About Healthure</h2>
+                    <p className="mt-4 text-lg text-slate-500">At Healthure, we believe that managing your health should be simple, transparent, and empowering. Our mission is to bridge the gap between patients and pharmacies through innovative technology. We are a team of healthcare professionals, developers, and designers dedicated to creating a healthier future for everyone.</p>
                 </div>
                  <div className="relative h-64 md:h-80">
                     <Image src="https://picsum.photos/seed/doctor-friendly/600/400" alt="Friendly doctor illustration" layout="fill" objectFit="contain" data-ai-hint="friendly doctor" />
@@ -148,7 +148,7 @@ export default function Home() {
                     <p>Stay connected on social media.</p>
                 </div>
                 <div>
-                    <h3 className="font-bold text-lg mb-2">MediSys</h3>
+                    <h3 className="font-bold text-lg mb-2">Healthure</h3>
                     <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
                 </div>
             </div>

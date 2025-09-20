@@ -33,7 +33,7 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="name@example.com" defaultValue={userType === 'Patient' ? 'patient@medisys.com' : 'pharmacist@medisys.com'} />
+                <Input id="email" type="email" placeholder="name@example.com" defaultValue={userType === 'Patient' ? 'patient@healthure.com' : 'pharmacist@healthure.com'} />
               </div>
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="password">Password</Label>

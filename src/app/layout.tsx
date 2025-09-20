@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'MediSys - Your Intelligent Health System',
+  title: 'Healthure - Medicine Safety, Made Simple',
   description: 'Manage appointments, prescriptions, and get AI-powered medication guidance.',
 };
 
