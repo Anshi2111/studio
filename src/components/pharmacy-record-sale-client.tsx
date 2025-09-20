@@ -8,18 +8,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 const SALES_RECORDS_KEY = 'healthure-sales-records';
+const PATIENT_DATABASE_KEY = 'healthure-patient-database';
 
 export function RecordSaleClient() {
   const [isSaving, startSaveTransition] = useTransition();
   
-  const [scannedMedicine, setScannedMedicine] = useState<{ name: string, expiryDate?: string, mfgDate?: string } | null>(null);
+  const [scannedMedicine, setScannedMedicine] = useState<{ name: string, expiryDate?: string, mfgDate?: string, barcode: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
@@ -38,7 +39,6 @@ export function RecordSaleClient() {
       },
       /* verbose= */ false
     );
-    scannerRef.current = scanner.html5Qrcode;
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
         scanner.pause();
@@ -50,6 +50,7 @@ export function RecordSaleClient() {
     }
 
     scanner.render(onScanSuccess, onScanFailure);
+    scannerRef.current = scanner;
     
     return () => {
       scanner.clear().catch(error => {
@@ -71,6 +72,7 @@ export function RecordSaleClient() {
         name: foundItem.medName,
         expiryDate: foundItem.expiryDate,
         mfgDate: foundItem.mfgDate,
+        barcode: barcode
       });
       toast({
         title: "Medicine Found!",
@@ -104,6 +106,25 @@ export function RecordSaleClient() {
     if (!scannedMedicine) return;
 
     startSaveTransition(() => {
+        // --- Patient Account Linking Logic ---
+        const patients = JSON.parse(localStorage.getItem(PATIENT_DATABASE_KEY) || '[]');
+        const patientExists = patients.some((p: any) => p.phone === patientPhone);
+
+        if (!patientExists) {
+            const newPatient = {
+                phone: patientPhone,
+                name: `Patient ${patientPhone.slice(-4)}`, // Create a default name
+                createdAt: new Date().toISOString(),
+            };
+            patients.push(newPatient);
+            localStorage.setItem(PATIENT_DATABASE_KEY, JSON.stringify(patients));
+            toast({
+                title: "New Patient Created",
+                description: `A new patient record has been created for phone number ${patientPhone}.`,
+            });
+        }
+        // --- End Logic ---
+
         const salesRecords = JSON.parse(localStorage.getItem(SALES_RECORDS_KEY) || '[]');
         
         const newSale = {
