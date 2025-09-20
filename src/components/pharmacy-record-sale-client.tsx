@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Video } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
@@ -32,6 +32,7 @@ export function RecordSaleClient() {
   const [scannedMedicine, setScannedMedicine] = useState<{ name: string, expiryDate?: string, mfgDate?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [cameraLabel, setCameraLabel] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
@@ -47,8 +48,12 @@ export function RecordSaleClient() {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          setCameraLabel(videoTrack.label);
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -169,6 +174,12 @@ export function RecordSaleClient() {
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
           </div>
+           {cameraLabel && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
+              <Video className="h-3 w-3" />
+              <span>{cameraLabel}</span>
+            </div>
+          )}
           {hasCameraPermission === false && (
             <Alert variant="destructive" className="mt-4">
               <AlertTitle>Camera Access Required</AlertTitle>
