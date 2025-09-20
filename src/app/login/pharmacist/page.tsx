@@ -1,7 +1,12 @@
+// This page is deprecated. The new login page is at /login
 'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { LoginForm } from '@/components/login-form';
-
-export default function PharmacistLoginPage() {
-  return <LoginForm userType="Pharmacist" redirectUrl="/pharmacy/dashboard" />;
+export default function DeprecatedPharmacistLoginPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/login');
+  }, [router]);
+  return null;
 }

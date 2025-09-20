@@ -18,16 +18,10 @@ export default function Home() {
             <Link href="#contact" className="hover:text-primary transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/login/patient">
-                <LogIn className="mr-2 h-4 w-4" />
-                Patient Login
-              </Link>
-            </Button>
             <Button asChild>
-              <Link href="/login/pharmacist">
+              <Link href="/login">
                 <LogIn className="mr-2 h-4 w-4" />
-                Pharmacist Login
+                Login
               </Link>
             </Button>
           </div>
@@ -137,8 +131,7 @@ export default function Home() {
                     <h3 className="font-bold text-lg mb-2">Quick Links</h3>
                     <ul>
                         <li><Link href="#features" className="hover:underline">Features</Link></li>
-                        <li><Link href="/login/patient" className="hover:underline">Patient Login</Link></li>
-                        <li><Link href="/login/pharmacist" className="hover:underline">Pharmacy Login</Link></li>
+                        <li><Link href="/login" className="hover:underline">Login</Link></li>
                     </ul>
                 </div>
                 <div>

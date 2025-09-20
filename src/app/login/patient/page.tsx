@@ -1,9 +1,12 @@
+// This page is deprecated. The new login page is at /login
 'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-import dynamic from 'next/dynamic';
-
-const LoginForm = dynamic(() => import('@/components/login-form').then(mod => mod.LoginForm), { ssr: false });
-
-export default function PatientLoginPage() {
-  return <LoginForm userType="Patient" redirectUrl="/patient/dashboard" />;
+export default function DeprecatedPatientLoginPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/login');
+  }, [router]);
+  return null;
 }
