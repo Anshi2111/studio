@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, Video } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, Video, XCircle, CameraOff } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
@@ -26,8 +26,10 @@ export function AddMedicineClient() {
   const [scannedData, setScannedData] = useState<{ barcode: string, name?: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [cameraLabel, setCameraLabel] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -38,45 +40,57 @@ export function AddMedicineClient() {
   const [quantity, setQuantity] = useState('');
   const [supplier, setSupplier] = useState('');
 
-
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+  const getCameraPermission = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setError('Camera access is not supported by your browser.');
         setHasCameraPermission(false);
         return;
-      }
-      try {
+    }
+    try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = stream;
         setHasCameraPermission(true);
+        setIsCameraActive(true);
         const videoTrack = stream.getVideoTracks()[0];
         if (videoTrack) {
-          setCameraLabel(videoTrack.label);
+            setCameraLabel(videoTrack.label);
         }
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+            videoRef.current.srcObject = stream;
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
+        setIsCameraActive(false);
         toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
         });
+    }
+  };
+
+  const stopCamera = () => {
+      if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
       }
-    };
+      if (videoRef.current) {
+          videoRef.current.srcObject = null;
+      }
+      setIsCameraActive(false);
+      setCameraLabel('');
+  }
+
+  useEffect(() => {
     getCameraPermission();
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, [toast]);
 
   const captureFrame = () => {
-    if (!videoRef.current) {
+    if (!videoRef.current || !isCameraActive) {
       setError('Video feed not available.');
       return;
     }
@@ -93,6 +107,11 @@ export function AddMedicineClient() {
   };
 
   const handleScan = () => {
+    if (!isCameraActive) {
+        getCameraPermission();
+        return;
+    }
+
     const imageDataUri = captureFrame();
     if (!imageDataUri) return;
 
@@ -138,6 +157,16 @@ export function AddMedicineClient() {
       setSupplier('');
   }
 
+  const handleClear = () => {
+    resetForm();
+    setScannedData(null);
+    setError(null);
+    toast({
+        title: "Form Cleared",
+        description: "You can now scan a new item or enter details manually.",
+    });
+  };
+
   const handleSaveMedicine = () => {
       startSaveTransition(() => {
           // Get current inventory or initialize an empty array
@@ -178,9 +207,11 @@ export function AddMedicineClient() {
         </CardHeader>
         <CardContent className="relative">
           <video ref={videoRef} className="w-full aspect-video rounded-md bg-slate-200" autoPlay muted playsInline />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
-          </div>
+          {isCameraActive && 
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
+            </div>
+          }
           {cameraLabel && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
               <Video className="h-3 w-3" />
@@ -196,9 +227,13 @@ export function AddMedicineClient() {
             </Alert>
           )}
         </CardContent>
-        <CardFooter>
-          <Button onClick={handleScan} disabled={isScanning || !hasCameraPermission} className="w-full">
+        <CardFooter className="grid grid-cols-2 gap-2">
+          <Button onClick={handleScan} disabled={isScanning || !hasCameraPermission || !isCameraActive} className="w-full">
             {isScanning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</> : 'Scan'}
+          </Button>
+          <Button onClick={stopCamera} variant="outline" disabled={!isCameraActive}>
+            <CameraOff className="mr-2 h-4 w-4" />
+            Stop Scanning
           </Button>
         </CardFooter>
       </Card>
@@ -266,9 +301,13 @@ export function AddMedicineClient() {
              )}
         </CardContent>
          {scannedData && (
-            <CardFooter>
+            <CardFooter className="grid grid-cols-2 gap-2">
                 <Button onClick={handleSaveMedicine} disabled={isSaving || !isFormValid} className="w-full">
                     {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add to Inventory</>}
+                </Button>
+                <Button onClick={handleClear} variant="outline">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Clear Form
                 </Button>
             </CardFooter>
          )}
