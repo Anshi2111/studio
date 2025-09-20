@@ -64,7 +64,7 @@ export function RecordSaleClient() {
     scannerRef.current = scanner;
     
     return () => {
-      if (scanner.getState() === 2) {
+      if (scanner.getState() === 2) { // 2 is SCANNING state
         scanner.clear().catch(error => {
             console.error("Failed to clear html5QrcodeScanner.", error);
         });
