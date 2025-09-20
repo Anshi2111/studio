@@ -27,18 +27,23 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative py-28 md:py-36 lg:py-48 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-extrabold text-[#1A3D7C] tracking-tight mb-6">
-                Medicine Safety, Made Simple.
-              </h1>
-              <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-600 mb-10">
-                Your integrated health partner for seamless patient and pharmacy management. Experience the future of healthcare, today.
-              </p>
-              <Button size="lg" className="bg-[#1ABC9C] hover:bg-[#16a085] text-white" asChild>
-                <Link href="/patient/dashboard">
-                  Explore Patient Portal <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div className="text-left">
+                <h1 className="text-4xl md:text-6xl font-extrabold text-[#1A3D7C] tracking-tight mb-6">
+                  Medicine Safety, Made Simple.
+                </h1>
+                <p className="max-w-2xl text-lg md:text-xl text-slate-600 mb-10">
+                  Your integrated health partner for seamless patient and pharmacy management. Experience the future of healthcare, today.
+                </p>
+                <Button size="lg" className="bg-[#1ABC9C] hover:bg-[#16a085] text-white" asChild>
+                  <Link href="/patient/dashboard">
+                    Explore Patient Portal <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="flex justify-center">
+                <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1722019472304" alt="Healthure Logo" width={400} height={400} data-ai-hint="logo" />
+              </div>
             </div>
           </div>
         </section>
