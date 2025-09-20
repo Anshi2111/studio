@@ -109,13 +109,10 @@ export default function Home() {
         </section>
 
         <section id="about" className="py-20 md:py-28 bg-white">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
-                <div>
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div className="max-w-3xl mx-auto">
                     <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">About Healthure</h2>
                     <p className="mt-4 text-lg text-slate-500">At Healthure, we believe that managing your health should be simple, transparent, and empowering. Our mission is to bridge the gap between patients and pharmacies through innovative technology. We are a team of healthcare professionals, developers, and designers dedicated to creating a healthier future for everyone.</p>
-                </div>
-                 <div className="relative h-64 md:h-80">
-                    <Image src="https://picsum.photos/seed/doctor-friendly/600/400" alt="Friendly doctor illustration" layout="fill" objectFit="contain" data-ai-hint="friendly doctor" />
                 </div>
             </div>
         </section>
