@@ -14,6 +14,8 @@ import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { useToast } from "@/hooks/use-toast";
 
 const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
+const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
+
 
 function getExpiryBadge(expiryDate: string): React.ReactNode {
     if (!expiryDate) {
@@ -91,7 +93,9 @@ export function MedicineCabinetClient() {
         return;
     }
     startTransition(async () => {
-        const response = await findMedicationExpiryDate({ medicationName: newMedName, purchaseDate: newMedPurchaseDate, email: userEmail });
+        const salesRecordsStr = localStorage.getItem(SALES_RECORDS_STORAGE_KEY) || '[]';
+        const salesRecords = JSON.parse(salesRecordsStr);
+        const response = await findMedicationExpiryDate({ medicationName: newMedName, purchaseDate: newMedPurchaseDate, email: userEmail, salesRecords });
         if (response.success && response.data?.expiryDate) {
             setNewMedExpiry(response.data.expiryDate);
             toast({
