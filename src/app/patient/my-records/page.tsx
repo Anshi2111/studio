@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pill, History, Bell } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MyMedicinesClient } from "@/components/patient-my-medicines-client";
 
 export default function MyRecordsPage() {
     return (
@@ -30,15 +31,7 @@ export default function MyRecordsPage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="my-medicines">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>My Medicines</CardTitle>
-                            <CardDescription>A unified list of your purchased and scanned medicines.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <p className="text-muted-foreground">Coming soon...</p>
-                        </CardContent>
-                    </Card>
+                    <MyMedicinesClient />
                 </TabsContent>
                 <TabsContent value="medical-history">
                      <Card>

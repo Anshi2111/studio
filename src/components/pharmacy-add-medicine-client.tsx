@@ -5,22 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
-// This is a mock database of barcodes. In a real app, this would be a database call.
-const MOCK_BARCODE_DB: { [key: string]: { name: string } } = {
-    "0123456789012": { name: "Tylenol" },
-    "9876543210987": { name: "Advil" },
-};
+const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
-// Mock function to simulate barcode detection from an image
+// This is a mock barcode detection function. 
 const detectBarcode = (imageDataUri: string): string | null => {
-    // In a real app, you'd use a library like `zxing-js` here.
-    // For this demo, we'll just return a mock barcode to simulate a "not found" case.
-    console.log("Simulating barcode detection for:", imageDataUri.substring(0, 30) + "...");
-    return `MOCK_${Date.now()}`;
+    console.log("Simulating barcode detection:", imageDataUri.substring(0, 30) + "...");
+    // To simulate different scenarios, we can return different values.
+    // In a real app, you'd use a library like `zxing-js`.
+    // Let's return a "new" barcode every time to test the "add manually" flow.
+    return `NEW_BARCODE_${Date.now()}`;
 };
 
 export function AddMedicineClient() {
@@ -99,22 +96,23 @@ export function AddMedicineClient() {
     resetForm();
 
     startScanTransition(() => {
-      // Simulate a network delay
       setTimeout(() => {
         const detectedBarcode = detectBarcode(imageDataUri);
+        const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+        const foundItem = inventory.find((item: any) => item.barcode === detectedBarcode);
+
         if (detectedBarcode) {
-          const medicineInfo = MOCK_BARCODE_DB[detectedBarcode];
-          if (medicineInfo) {
-            setScannedData({ barcode: detectedBarcode, name: medicineInfo.name });
+          if (foundItem) {
+            setScannedData({ barcode: detectedBarcode, name: foundItem.medName });
              toast({
                 title: "Medicine Found!",
-                description: `${medicineInfo.name} is already in the system. You can add it to inventory.`,
+                description: `${foundItem.medName} is already in the system. You can update its inventory.`,
             });
-            setMedName(medicineInfo.name);
+            setMedName(foundItem.medName);
           } else {
             setScannedData({ barcode: detectedBarcode });
              toast({
-                variant: 'destructive',
+                variant: 'default',
                 title: "New Medicine Detected",
                 description: "This barcode isn't in your system. Please add its details manually.",
             });
@@ -137,9 +135,17 @@ export function AddMedicineClient() {
 
   const handleSaveMedicine = () => {
       startSaveTransition(() => {
-          // In a real app, you would save this to your database/inventory.
-          // For now, we just show a success toast.
-          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier };
+          // Get current inventory or initialize an empty array
+          const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+          
+          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: scannedData?.barcode };
+          
+          // Add the new medicine to the inventory array
+          inventory.push(newMedicine);
+          
+          // Save the updated inventory back to localStorage
+          localStorage.setItem(MOCK_INVENTORY_KEY, JSON.stringify(inventory));
+
           console.log("Saving new medicine:", newMedicine);
 
           toast({
