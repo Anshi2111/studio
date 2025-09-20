@@ -32,6 +32,7 @@ const getExpiryDateForMedication = ai.defineTool(
 const MedicationExpiryInputSchema = z.object({
   medicationName: z.string().describe('The name of the new medication.'),
   purchaseDate: z.string().describe('The date the patient purchased the medication.'),
+  email: z.string().email().describe("The user's email address."),
 });
 export type MedicationExpiryInput = z.infer<typeof MedicationExpiryInputSchema>;
 
@@ -56,6 +57,7 @@ const prompt = ai.definePrompt({
 
   Medication Name: {{{medicationName}}}
   Purchase Date: {{{purchaseDate}}}
+  User Email: {{{email}}}
   
   If you find an expiry date, return it. If you cannot find a matching record, return nothing.`,
 });

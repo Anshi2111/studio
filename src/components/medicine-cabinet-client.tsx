@@ -8,7 +8,7 @@ import type { UserMedication } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Bot, Loader2, Save } from 'lucide-react';
+import { PlusCircle, Bot, Loader2, Save, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,7 @@ export function MedicineCabinetClient() {
   const [newMedName, setNewMedName] = useState('');
   const [newMedPurchaseDate, setNewMedPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [newMedExpiry, setNewMedExpiry] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -76,20 +77,21 @@ export function MedicineCabinetClient() {
       setNewMedName('');
       setNewMedPurchaseDate(new Date().toISOString().split('T')[0]);
       setNewMedExpiry('');
+      setUserEmail('');
     }
   };
 
   const handleFindExpiry = () => {
-    if (!newMedName || !newMedPurchaseDate) {
+    if (!newMedName || !newMedPurchaseDate || !userEmail) {
         toast({
             variant: 'destructive',
             title: 'Missing Information',
-            description: 'Please enter the medicine name and purchase date.',
+            description: 'Please enter the medicine name, purchase date, and your email.',
         });
         return;
     }
     startTransition(async () => {
-        const response = await findMedicationExpiryDate({ medicationName: newMedName, purchaseDate: newMedPurchaseDate });
+        const response = await findMedicationExpiryDate({ medicationName: newMedName, purchaseDate: newMedPurchaseDate, email: userEmail });
         if (response.success && response.data?.expiryDate) {
             setNewMedExpiry(response.data.expiryDate);
             toast({
@@ -140,6 +142,13 @@ export function MedicineCabinetClient() {
                      <div className="space-y-2">
                         <Label htmlFor="med-purchase-date">Purchase Date</Label>
                         <Input id="med-purchase-date" type="date" value={newMedPurchaseDate} onChange={e => setNewMedPurchaseDate(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="user-email">Your Email</Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="user-email" type="email" placeholder="you@example.com" value={userEmail} onChange={e => setUserEmail(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="med-expiry">Expiry Date</Label>
