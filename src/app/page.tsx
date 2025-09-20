@@ -97,7 +97,7 @@ export default function Home() {
         <section id="pharmacy-dashboard" className="py-20 md:py-28 bg-[#F5F5F5]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
             <Card className="shadow-xl rounded-xl overflow-hidden order-last md:order-first">
-                 <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4G32-a5ab-5419352e6900/1722013898239" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="pharmacy interior" />
+                 <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1722014169722" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="company logo" />
             </Card>
             <div className="pl-8 order-first md:order-last">
               <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Streamline Your Pharmacy</h2>
