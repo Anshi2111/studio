@@ -32,9 +32,13 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
 
 
   useEffect(() => {
+    // This is the production logic for handling the magic link.
+    // It will not run in the preview environment because the hostname does not match.
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let emailFromStorage = window.localStorage.getItem(`emailForSignIn-${userType}`);
       if (!emailFromStorage) {
+        // If the email is not in storage, it might be because the user is on a different device.
+        // We can prompt them for their email.
         emailFromStorage = window.prompt(`Please provide your email for confirmation (${userType})`);
       }
 
@@ -56,6 +60,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
             setIsVerifying(false);
           });
       } else {
+        // No email provided or found.
         setIsVerifying(false);
       }
     } else {
@@ -68,6 +73,23 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // --- MOCK LOGIN FOR PREVIEW ENVIRONMENT ---
+    // In a real deployed app, the magic link would not work on a preview URL.
+    // This simulates a successful login for development and preview purposes.
+    if (process.env.NODE_ENV === 'development' || window.location.hostname.includes('localhost')) {
+        console.log("MOCK LOGIN: Simulating magic link sign-in for preview.");
+        setTimeout(() => {
+            toast({
+                title: 'Mock Login Successful',
+                description: `Redirecting to the ${title}...`,
+            });
+            router.push(redirectPath);
+        }, 1000);
+        return;
+    }
+    // --- END MOCK LOGIN ---
+
 
     const actionCodeSettings = {
       url: `${window.location.origin}${loginPath}`,
@@ -100,6 +122,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-lg font-medium">Verifying your magic link...</p>
+          <p className="text-sm">This may take a moment.</p>
         </div>
       </div>
     )
