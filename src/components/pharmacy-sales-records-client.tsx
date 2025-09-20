@@ -5,11 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { SoldMedication } from '@/lib/types';
 import { mockSoldMedications } from '@/lib/mock-data';
+import { useToast } from "@/hooks/use-toast";
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
 
@@ -19,6 +20,7 @@ export function PharmacySalesRecordsClient() {
   const [dateSold, setDateSold] = useState(new Date().toISOString().split('T')[0]);
   const [expiryDate, setExpiryDate] = useState('');
   const [patientName, setPatientName] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedRecords = localStorage.getItem(SALES_RECORDS_STORAGE_KEY);
@@ -31,7 +33,14 @@ export function PharmacySalesRecordsClient() {
   
   const updateSalesRecords = (records: SoldMedication[]) => {
     setSalesRecords(records);
-    localStorage.setItem(SALES_RECORDS_STORAGE_KEY, JSON.stringify(records));
+  };
+  
+  const handleSaveChanges = () => {
+    localStorage.setItem(SALES_RECORDS_STORAGE_KEY, JSON.stringify(salesRecords));
+    toast({
+        title: 'Records Saved!',
+        description: 'The sales records have been saved successfully.',
+    });
   };
 
 
@@ -58,7 +67,13 @@ export function PharmacySalesRecordsClient() {
         <div className="md:col-span-2">
              <Card className="shadow-lg">
                 <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg mb-4">Logged Sales</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-lg">Logged Sales</h3>
+                        <Button variant="outline" size="sm" onClick={handleSaveChanges}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Records
+                        </Button>
+                    </div>
                      <Table>
                         <TableHeader>
                             <TableRow>

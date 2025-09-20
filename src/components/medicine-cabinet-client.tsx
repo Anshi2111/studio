@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { mockUserMedications } from '@/lib/mock-data';
 import type { UserMedication } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Bot, Loader2 } from 'lucide-react';
+import { PlusCircle, Bot, Loader2, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +54,14 @@ export function MedicineCabinetClient() {
   const updateMedications = (meds: UserMedication[]) => {
     const sortedMeds = meds.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
     setUserMedications(sortedMeds);
-    localStorage.setItem(MED_CABINET_STORAGE_KEY, JSON.stringify(sortedMeds));
+  };
+  
+  const handleSaveChanges = () => {
+    localStorage.setItem(MED_CABINET_STORAGE_KEY, JSON.stringify(userMedications));
+    toast({
+        title: 'Cabinet Saved!',
+        description: 'Your medication list has been saved successfully.',
+    });
   };
 
   const handleAddMedication = () => {
@@ -104,7 +111,13 @@ export function MedicineCabinetClient() {
         <CardContent className="p-6">
             <div className="grid gap-6 md:grid-cols-2">
                 <div>
-                    <h3 className="font-semibold text-lg mb-4">Your Medications</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-lg">Your Medications</h3>
+                         <Button variant="outline" size="sm" onClick={handleSaveChanges}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Cabinet
+                        </Button>
+                    </div>
                     <div className="space-y-3">
                         {userMedications.map(med => (
                             <div key={med.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
