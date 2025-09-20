@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,23 +11,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { SoldMedication } from '@/lib/types';
 import { mockSoldMedications } from '@/lib/mock-data';
 
+const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
+
 export function PharmacySalesRecordsClient() {
-  const [salesRecords, setSalesRecords] = useState<SoldMedication[]>(mockSoldMedications);
+  const [salesRecords, setSalesRecords] = useState<SoldMedication[]>([]);
   const [medicineName, setMedicineName] = useState('');
   const [dateSold, setDateSold] = useState(new Date().toISOString().split('T')[0]);
   const [expiryDate, setExpiryDate] = useState('');
   const [patientName, setPatientName] = useState('');
 
+  useEffect(() => {
+    const storedRecords = localStorage.getItem(SALES_RECORDS_STORAGE_KEY);
+    if (storedRecords) {
+      setSalesRecords(JSON.parse(storedRecords));
+    } else {
+      setSalesRecords(mockSoldMedications);
+    }
+  }, []);
+  
+  const updateSalesRecords = (records: SoldMedication[]) => {
+    setSalesRecords(records);
+    localStorage.setItem(SALES_RECORDS_STORAGE_KEY, JSON.stringify(records));
+  };
+
+
   const handleAddRecord = () => {
     if (medicineName && dateSold && expiryDate) {
       const newRecord: SoldMedication = {
-        id: `sm${salesRecords.length + 1}`,
+        id: `sm${Date.now()}`,
         medicineName,
         dateSold,
         expiryDate,
         patientName: patientName || undefined,
       };
-      setSalesRecords([newRecord, ...salesRecords]);
+      updateSalesRecords([newRecord, ...salesRecords]);
       // Reset form
       setMedicineName('');
       setDateSold(new Date().toISOString().split('T')[0]);

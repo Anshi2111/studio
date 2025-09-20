@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { mockUserMedications } from '@/lib/mock-data';
@@ -12,6 +12,8 @@ import { PlusCircle, Bot, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { useToast } from "@/hooks/use-toast";
+
+const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
 
 function getExpiryBadge(expiryDate: string): React.ReactNode {
     if (!expiryDate) {
@@ -33,22 +35,37 @@ function getExpiryBadge(expiryDate: string): React.ReactNode {
 
 
 export function MedicineCabinetClient() {
-  const [userMedications, setUserMedications] = useState<UserMedication[]>(mockUserMedications);
+  const [userMedications, setUserMedications] = useState<UserMedication[]>([]);
   const [newMedName, setNewMedName] = useState('');
   const [newMedPurchaseDate, setNewMedPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [newMedExpiry, setNewMedExpiry] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const storedMeds = localStorage.getItem(MED_CABINET_STORAGE_KEY);
+    if (storedMeds) {
+      setUserMedications(JSON.parse(storedMeds));
+    } else {
+      setUserMedications(mockUserMedications);
+    }
+  }, []);
+
+  const updateMedications = (meds: UserMedication[]) => {
+    const sortedMeds = meds.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+    setUserMedications(sortedMeds);
+    localStorage.setItem(MED_CABINET_STORAGE_KEY, JSON.stringify(sortedMeds));
+  };
 
   const handleAddMedication = () => {
     if (newMedName && newMedPurchaseDate) {
       const newMed: UserMedication = {
-        id: `um${userMedications.length + 1}`,
+        id: `um${Date.now()}`,
         name: newMedName,
         purchaseDate: newMedPurchaseDate,
         expiryDate: newMedExpiry,
       };
-      setUserMedications([...userMedications, newMed].sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()));
+      updateMedications([...userMedications, newMed]);
       setNewMedName('');
       setNewMedPurchaseDate(new Date().toISOString().split('T')[0]);
       setNewMedExpiry('');
