@@ -83,11 +83,29 @@ export function AddMedicineClient() {
   }
 
   useEffect(() => {
-    getCameraPermission();
+    // We don't automatically request permission on load anymore
+    // User will click a button to start the camera
+    const checkInitialPermission = async () => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            try {
+                // Check if we already have permission without prompting
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                if (devices.some(device => device.kind === 'videoinput' && device.label)) {
+                     setHasCameraPermission(true);
+                }
+            } catch(e) {
+                setHasCameraPermission(false);
+            }
+        } else {
+            setHasCameraPermission(false);
+        }
+    };
+    checkInitialPermission();
+
     return () => {
       stopCamera();
     };
-  }, [toast]);
+  }, []);
 
   const captureFrame = () => {
     if (!videoRef.current || !isCameraActive) {
@@ -106,7 +124,7 @@ export function AddMedicineClient() {
     return canvas.toDataURL('image/png');
   };
 
-  const handleScan = () => {
+  const handleScanClick = () => {
     if (!isCameraActive) {
         getCameraPermission();
         return;
@@ -144,6 +162,7 @@ export function AddMedicineClient() {
         } else {
           setError('Could not detect a barcode. Please try again with a clearer image.');
         }
+        stopCamera();
       }, 1000);
     });
   };
@@ -161,6 +180,7 @@ export function AddMedicineClient() {
     resetForm();
     setScannedData(null);
     setError(null);
+    if(isCameraActive) stopCamera();
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item or enter details manually.",
@@ -212,7 +232,15 @@ export function AddMedicineClient() {
                 <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
             </div>
           }
-          {cameraLabel && (
+           {!isCameraActive && hasCameraPermission !== false &&
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-200 rounded-md">
+                <div className="text-center text-muted-foreground">
+                    <CameraOff className="h-12 w-12 mx-auto mb-2"/>
+                    <p>Camera is off</p>
+                </div>
+            </div>
+           }
+          {cameraLabel && isCameraActive && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
               <Video className="h-3 w-3" />
               <span>{cameraLabel}</span>
@@ -228,12 +256,15 @@ export function AddMedicineClient() {
           )}
         </CardContent>
         <CardFooter className="grid grid-cols-2 gap-2">
-          <Button onClick={handleScan} disabled={isScanning || !hasCameraPermission || !isCameraActive} className="w-full">
-            {isScanning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</> : 'Scan'}
+          <Button onClick={handleScanClick} disabled={isScanning} className="w-full">
+            {isScanning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</> 
+            : isCameraActive ? 'Scan Barcode' 
+            : 'Start Scanning'
+            }
           </Button>
           <Button onClick={stopCamera} variant="outline" disabled={!isCameraActive}>
             <CameraOff className="mr-2 h-4 w-4" />
-            Stop Scanning
+            Stop Camera
           </Button>
         </CardFooter>
       </Card>
