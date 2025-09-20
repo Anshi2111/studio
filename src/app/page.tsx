@@ -3,91 +3,155 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { ArrowRight, Bot, Syringe, Users } from 'lucide-react';
+import { ArrowRight, BarChart, HeartPulse, ShieldCheck, Stethoscope, Pill } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
+      <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <Logo />
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login/patient">Patient Login</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/login/pharmacist">Pharmacy Portal</Link>
-            </Button>
-          </div>
+          <nav className="hidden md:flex items-center gap-6 text-lg font-medium text-slate-800">
+            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+            <Link href="#features" className="hover:text-primary transition-colors">Features</Link>
+            <Link href="/patient/dashboard" className="hover:text-primary transition-colors">Patient Dashboard</Link>
+            <Link href="/pharmacy/dashboard" className="hover:text-primary transition-colors">Pharmacy Dashboard</Link>
+            <Link href="#about" className="hover:text-primary transition-colors">About Us</Link>
+          </nav>
+          <Button asChild>
+            <Link href="#contact">Contact</Link>
+          </Button>
         </div>
       </header>
       
       <main className="flex-1">
-        <section className="relative py-24 md:py-32 lg:py-40">
-          <div className="absolute inset-0">
-            <Image
-              src="https://picsum.photos/seed/medisys-hero/1920/1080"
-              alt="A calm and modern healthcare setting"
-              fill
-              className="object-cover"
-              data-ai-hint="medical professional"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
-             <div className="absolute inset-0 bg-primary/20" />
-          </div>
-          <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold font-headline tracking-tighter mb-4 text-gray-800 drop-shadow-lg">
-              Intelligent Health, Simplified.
-            </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-700/90 mb-8 drop-shadow">
-              MediSys connects patients and pharmacies with a seamless, AI-enhanced platform. Manage your health with confidence and clarity.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button size="lg" asChild>
-                <Link href="/login/patient">
-                  Access Patient Portal <ArrowRight className="ml-2 h-5 w-5" />
+        <section className="relative py-28 md:py-36 lg:py-48 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 items-center gap-12">
+            <div className="text-center md:text-left">
+              <h1 className="text-4xl md:text-6xl font-extrabold text-[#1A3D7C] tracking-tight mb-6">
+                Caring for Health, Simplifying Pharmacy.
+              </h1>
+              <p className="max-w-xl mx-auto md:mx-0 text-lg md:text-xl text-slate-600 mb-10">
+                Your integrated health partner for seamless patient and pharmacy management. Experience the future of healthcare, today.
+              </p>
+              <Button size="lg" className="bg-[#1ABC9C] hover:bg-[#16a085] text-white" asChild>
+                <Link href="/patient/dashboard">
+                  Explore Patient Portal <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="secondary" asChild>
-                <Link href="/login/pharmacist">
-                  Enter Pharmacy Dashboard
+            </div>
+            <div className="relative h-64 md:h-full">
+              <Image
+                src="https://picsum.photos/seed/professionals/800/600"
+                alt="A diverse group of healthcare professionals and patients"
+                layout="fill"
+                objectFit="contain"
+                className="rounded-lg"
+                data-ai-hint="healthcare professionals patients"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="py-20 md:py-28 bg-[#F5F5F5]">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Why Choose MediSys?</h2>
+              <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">Discover the powerful features that make health management intuitive and efficient.</p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <FeatureCard
+                icon={<Stethoscope className="h-10 w-10 text-[#4A90E2]" />}
+                title="Smart Diagnostics"
+                description="Leverage AI to understand symptoms and get initial guidance."
+              />
+              <FeatureCard
+                icon={<Pill className="h-10 w-10 text-[#1ABC9C]" />}
+                title="Medication Insights"
+                description="Scan barcodes to get instant, clear information about your medications."
+              />
+              <FeatureCard
+                icon={<BarChart className="h-10 w-10 text-[#F5A623]" />}
+                title="Health Dashboards"
+                description="Visualize your health journey with intuitive charts for patients and pharmacies."
+              />
+              <FeatureCard
+                icon={<ShieldCheck className="h-10 w-10 text-[#D0021B]" />}
+                title="Secure & Compliant"
+                description="Your data is protected with the highest standards of security and privacy."
+              />
+            </div>
+          </div>
+        </section>
+
+        <section id="patient-dashboard" className="py-20 md:py-28 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+            <div className="pr-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Your Personal Health Hub</h2>
+              <p className="mt-4 text-lg text-slate-500 mb-6">Manage appointments, view prescriptions, and track your health progress—all in one place. The patient dashboard puts you in control.</p>
+              <Button variant="outline" asChild>
+                <Link href="/patient/dashboard">
+                  Go to Patient Dashboard
+                </Link>
+              </Button>
+            </div>
+            <Card className="shadow-xl rounded-xl overflow-hidden">
+                <Image src="https://picsum.photos/seed/patient-dash/800/600" alt="Patient dashboard preview" width={800} height={600} className="w-full" data-ai-hint="dashboard chart" />
+            </Card>
+          </div>
+        </section>
+
+        <section id="pharmacy-dashboard" className="py-20 md:py-28 bg-[#F5F5F5]">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+            <Card className="shadow-xl rounded-xl overflow-hidden order-last md:order-first">
+                 <Image src="https://picsum.photos/seed/pharmacy-dash/800/600" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="pharmacy interior" />
+            </Card>
+            <div className="pl-8 order-first md:order-last">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Streamline Your Pharmacy</h2>
+              <p className="mt-4 text-lg text-slate-500 mb-6">Efficiently manage prescriptions, track inventory with real-time alerts, and analyze sales data to grow your business. </p>
+              <Button variant="outline" asChild>
+                <Link href="/pharmacy/dashboard">
+                  Go to Pharmacy Dashboard
                 </Link>
               </Button>
             </div>
           </div>
         </section>
 
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold font-headline">A Complete Health Ecosystem</h2>
-              <p className="mt-4 text-lg text-muted-foreground">Everything you and your pharmacy need, all in one place.</p>
+        <section id="about" className="py-20 md:py-28 bg-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">About MediSys</h2>
+                    <p className="mt-4 text-lg text-slate-500">At MediSys, we believe that managing your health should be simple, transparent, and empowering. Our mission is to bridge the gap between patients and pharmacies through innovative technology. We are a team of healthcare professionals, developers, and designers dedicated to creating a healthier future for everyone.</p>
+                </div>
+                 <div className="relative h-64 md:h-80">
+                    <Image src="https://picsum.photos/seed/doctor-friendly/600/400" alt="Friendly doctor illustration" layout="fill" objectFit="contain" data-ai-hint="friendly doctor" />
+                </div>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <FeatureCard
-                icon={<Users className="h-8 w-8 text-blue-500" />}
-                title="Patient-Centric Dashboard"
-                description="View your appointments, prescriptions, and health data at a glance. Take control of your health journey."
-              />
-              <FeatureCard
-                icon={<Syringe className="h-8 w-8 text-red-500" />}
-                title="Pharmacy Operations Hub"
-                description="Streamline prescription management, track inventory in real-time, and gain insights with sales reports."
-              />
-              <FeatureCard
-                icon={<Bot className="h-8 w-8 text-green-500" />}
-                title="AI Medication Guide"
-                description="Understand your medication better. Check for potential interactions and side effects with our AI assistant."
-              />
-            </div>
-          </div>
         </section>
       </main>
 
-      <footer className="border-t">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} MediSys. All rights reserved.</p>
+      <footer id="contact" className="bg-[#1A3D7C] text-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid md:grid-cols-3 gap-8 text-center md:text-left">
+                <div>
+                    <h3 className="font-bold text-lg mb-2">Quick Links</h3>
+                    <ul>
+                        <li><Link href="#features" className="hover:underline">Features</Link></li>
+                        <li><Link href="/login/patient" className="hover:underline">Patient Login</Link></li>
+                        <li><Link href="/login/pharmacist" className="hover:underline">Pharmacy Login</Link></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg mb-2">Follow Us</h3>
+                    {/* Social Icons would go here */}
+                    <p>Stay connected on social media.</p>
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg mb-2">MediSys</h3>
+                    <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
+                </div>
+            </div>
         </div>
       </footer>
     </div>
@@ -96,13 +160,13 @@ export default function Home() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <Card className="shadow-md hover:shadow-xl transition-shadow duration-300 text-center items-center p-6">
-       <div className="flex justify-center mb-4">{icon}</div>
+    <Card className="shadow-lg hover:shadow-2xl transition-shadow duration-300 text-center items-center p-8 bg-white rounded-xl">
+       <div className="flex justify-center mb-5">{icon}</div>
       <CardHeader className="p-0">
-        <CardTitle className="font-headline text-xl">{title}</CardTitle>
+        <CardTitle className="font-bold text-xl text-[#1A3D7C]">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 pt-2">
-        <p className="text-muted-foreground">{description}</p>
+      <CardContent className="p-0 pt-3">
+        <p className="text-slate-500">{description}</p>
       </CardContent>
     </Card>
   );

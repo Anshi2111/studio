@@ -47,12 +47,12 @@ export function MedicationGuideClient() {
   }
 
   return (
-    <div className="grid gap-8 md:grid-cols-2">
+    <div className="grid gap-8 md:grid-cols-2 mt-6">
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-headline">
             <Bot className="h-6 w-6" />
-            AI-Powered Medication Guide
+            Check for Interactions
           </CardTitle>
           <CardDescription>
             Enter a medication and patient history to check for potential interactions and side effects. This guide is for informational purposes only and is not a substitute for professional medical advice.
@@ -163,6 +163,14 @@ export function MedicationGuideClient() {
                     </Accordion>
                 </CardContent>
             </Card>
+        )}
+         {!isPending && !result && !error && (
+             <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Sparkles className="h-10 w-10" />
+                    <p className="font-medium">Interaction report will appear here.</p>
+                </div>
+            </div>
         )}
       </div>
     </div>
