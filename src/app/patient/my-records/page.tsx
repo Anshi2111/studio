@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pill, History, Bell } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MyMedicinesClient } from "@/components/patient-my-medicines-client";
+import { MedicalHistoryClient } from "@/components/patient-medical-history-client";
+import { RemindersClient } from "@/components/patient-reminders-client";
 
 export default function MyRecordsPage() {
     return (
@@ -34,26 +35,10 @@ export default function MyRecordsPage() {
                     <MyMedicinesClient />
                 </TabsContent>
                 <TabsContent value="medical-history">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Medical History</CardTitle>
-                             <CardDescription>Record and view your medical history timeline.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">Coming soon...</p>
-                        </CardContent>
-                    </Card>
+                     <MedicalHistoryClient />
                 </TabsContent>
                 <TabsContent value="reminders">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Reminders & Alerts</CardTitle>
-                            <CardDescription>Manage expiry, dosage, and refill reminders.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <p className="text-muted-foreground">Coming soon...</p>
-                        </CardContent>
-                    </Card>
+                     <RemindersClient />
                 </TabsContent>
             </Tabs>
         </div>

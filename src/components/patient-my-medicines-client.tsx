@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
+const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
 const LOGGED_IN_PATIENT_PHONE = '123-456-7890'; // Mock logged-in patient
 
 interface CombinedMedicineRecord {
@@ -28,7 +29,7 @@ export function MyMedicinesClient() {
         const salesRecordsStr = localStorage.getItem(SALES_RECORDS_STORAGE_KEY);
         const salesRecords = salesRecordsStr ? JSON.parse(salesRecordsStr) : [];
         
-        const purchasedMedicines = salesRecords
+        const purchasedMedicines: CombinedMedicineRecord[] = salesRecords
             .filter((sale: any) => sale.patientPhone === LOGGED_IN_PATIENT_PHONE)
             .map((sale: any) => ({
                 name: sale.medicineName,
@@ -39,10 +40,21 @@ export function MyMedicinesClient() {
                 dateAdded: sale.dateSold,
             }));
 
-        // In a real app, you would also fetch scanned medicines for the user.
-        // For now, we only have purchased ones.
+        // Fetch scanned/manually added medicines from medicine cabinet
+        const cabinetRecordsStr = localStorage.getItem(MED_CABINET_STORAGE_KEY);
+        const cabinetRecords = cabinetRecordsStr ? JSON.parse(cabinetRecordsStr) : [];
         
-        const allMedicines = [...purchasedMedicines].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+        const scannedMedicines: CombinedMedicineRecord[] = cabinetRecords.map((med: any) => ({
+            name: med.name,
+            mfgDate: undefined, // Not available in cabinet
+            expiryDate: med.expiryDate,
+            quantity: undefined, // Not available in cabinet
+            source: 'Scanned' as const,
+            dateAdded: med.purchaseDate, // Using purchase date as date added
+        }));
+
+        
+        const allMedicines = [...purchasedMedicines, ...scannedMedicines].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
 
         setMedicines(allMedicines);
     }, []);
@@ -52,7 +64,7 @@ export function MyMedicinesClient() {
     );
     
     const getExpiryBadge = (expiryDate?: string) => {
-        if (!expiryDate) return null;
+        if (!expiryDate) return <Badge variant="outline">N/A</Badge>;
         const today = new Date();
         today.setHours(0,0,0,0);
         const expiry = new Date(expiryDate);
@@ -87,6 +99,7 @@ export function MyMedicinesClient() {
                             <TableHead>Name</TableHead>
                             <TableHead>Source</TableHead>
                             <TableHead>Date Added</TableHead>
+                            <TableHead>Mfg Date</TableHead>
                             <TableHead>Expiry Date</TableHead>
                             <TableHead>Quantity</TableHead>
                         </TableRow>
@@ -101,12 +114,13 @@ export function MyMedicinesClient() {
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{format(new Date(med.dateAdded), 'PPP')}</TableCell>
-                                <TableCell>{getExpiryBadge(med.expiryDate) || 'N/A'}</TableCell>
+                                <TableCell>{med.mfgDate ? format(new Date(med.mfgDate), 'PPP') : 'N/A'}</TableCell>
+                                <TableCell>{getExpiryBadge(med.expiryDate)}</TableCell>
                                 <TableCell>{med.quantity || 'N/A'}</TableCell>
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                <TableCell colSpan={6} className="text-center text-muted-foreground">
                                     No medicines found.
                                 </TableCell>
                             </TableRow>

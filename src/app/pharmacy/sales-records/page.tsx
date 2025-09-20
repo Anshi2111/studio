@@ -6,11 +6,11 @@ export default function SalesRecordsPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                    <History className="h-8 w-8" /> Sales & Expiry Records
+                    <History className="h-8 w-8" /> Sales History & Reports
                 </h1>
             </div>
             <p className="text-muted-foreground mb-6">
-                Manually log sold over-the-counter medications to help patients track their expiry dates via the AI assistant.
+                Track all sales and generate reports to gain insights into your pharmacy's performance.
             </p>
             <PharmacySalesRecordsClient />
         </div>
