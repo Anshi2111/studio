@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A calm and modern healthcare setting.",
+      "imageUrl": "https://picsum.photos/seed/medisys-hero/1920/1080",
+      "imageHint": "medical professional"
+    },
+    {
+      "id": "patient-avatar",
+      "description": "Avatar for a patient user.",
+      "imageUrl": "https://picsum.photos/seed/Patient/100/100",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "pharmacist-avatar",
+      "description": "Avatar for a pharmacist user.",
+      "imageUrl": "https://picsum.photos/seed/Pharmacist/100/100",
+      "imageHint": "person portrait"
+    }
+  ]
 }
