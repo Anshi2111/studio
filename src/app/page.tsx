@@ -41,7 +41,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="relative h-64 md:h-full flex items-center justify-center">
-               <Logo className="h-64 w-64 md:h-80 md:w-80 text-[#1A3D7C]" />
+               <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1722004245638" alt="Healthcare professionals and patients" width={600} height={400} className="rounded-lg shadow-xl" data-ai-hint="healthcare professional patient" />
             </div>
           </div>
         </section>
@@ -89,7 +89,7 @@ export default function Home() {
               </Button>
             </div>
             <Card className="shadow-xl rounded-xl overflow-hidden">
-                <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1721943806214" alt="Patient dashboard preview" width={800} height={600} className="w-full" data-ai-hint="dashboard chart" />
+                <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1722004245638" alt="Patient dashboard preview" width={800} height={600} className="w-full" data-ai-hint="dashboard chart" />
             </Card>
           </div>
         </section>
@@ -97,7 +97,7 @@ export default function Home() {
         <section id="pharmacy-dashboard" className="py-20 md:py-28 bg-[#F5F5F5]">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
             <Card className="shadow-xl rounded-xl overflow-hidden order-last md:order-first">
-                 <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1721943806214" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="pharmacy interior" />
+                 <Image src="https://storage.googleapis.com/studiostoragetest/stable-1721935542846/user/2a688b02-5c02-4632-a5ab-5419352e6900/1722004245638" alt="Pharmacy dashboard preview" width={800} height={600} className="w-full" data-ai-hint="pharmacy interior" />
             </Card>
             <div className="pl-8 order-first md:order-last">
               <h2 className="text-3xl md:text-4xl font-bold text-[#1A3D7C]">Streamline Your Pharmacy</h2>
