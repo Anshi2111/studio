@@ -12,12 +12,6 @@ export function Logo({ className }: { className?: string }) {
           className="w-full h-full"
         >
           <path
-            d="M75,25 A25,25 0 0,1 50,50 A25,25 0 0,1 25,25"
-            fill="none"
-            stroke="#2196F3"
-            strokeWidth="10"
-          />
-          <path
             d="M85,50 C85,30 65,15 50,15 C35,15 15,30 15,50 C15,60 20,75 35,85 C45,90 60,90 70,85 C85,75 85,60 85,50 Z"
             fill="currentColor"
           />
@@ -48,12 +42,6 @@ export function Logo_s({ className }: { className?: string }) {
           viewBox="0 0 100 100"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path
-            d="M75,25 A25,25 0 0,1 50,50 A25,25 0 0,1 25,25"
-            fill="none"
-            stroke="#2196F3"
-            strokeWidth="10"
-          />
           <path
             d="M85,50 C85,30 65,15 50,15 C35,15 15,30 15,50 C15,60 20,75 35,85 C45,90 60,90 70,85 C85,75 85,60 85,50 Z"
             fill="#0D47A1"
