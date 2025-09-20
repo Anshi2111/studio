@@ -14,7 +14,7 @@ import {
 import { Logo } from '@/components/logo';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Archive, ClipboardList, LayoutDashboard, History, ScanLine, DollarSign } from 'lucide-react';
+import { Archive, ClipboardList, LayoutDashboard, History, DollarSign, PackagePlus } from 'lucide-react';
 import { DashboardHeader } from '@/components/dashboard/header';
 
 const menuItems = [
@@ -22,6 +22,7 @@ const menuItems = [
   { href: '/pharmacy/record-sale', label: 'Record Sale', icon: DollarSign },
   { href: '/pharmacy/prescriptions', label: 'Prescriptions', icon: ClipboardList },
   { href: '/pharmacy/inventory', label: 'Inventory', icon: Archive },
+  { href: '/pharmacy/add-medicine', label: 'Add Medicine', icon: PackagePlus },
   { href: '/pharmacy/sales-records', label: 'Sales Records', icon: History },
 ];
 
