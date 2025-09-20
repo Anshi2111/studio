@@ -56,12 +56,13 @@ const prompt = ai.definePrompt({
   tools: [getExpiryDateForMedication],
   prompt: `You are a pharmacy assistant. Your task is to find the expiry date for a medication based on the patient's input.
   
-  Use the provided tools to look up the expiry date from the pharmacy's sales records.
-
-  Medication Name: {{{medicationName}}}
-  Purchase Date: {{{purchaseDate}}}
-  User Email: {{{email}}}
-  Sales Records: {{{json salesRecords}}}
+  Use the provided getExpiryDateForMedication tool to look up the expiry date from the pharmacy's sales records.
+  
+  You must pass the following information to the tool:
+  - Medication Name: {{{medicationName}}}
+  - Purchase Date: {{{purchaseDate}}}
+  - User Email: {{{email}}}
+  - Sales Records: {{{json salesRecords}}}
   
   If you find an expiry date, return it. If you cannot find a matching record, return nothing.`,
 });
