@@ -14,13 +14,14 @@ import {
 import { Logo } from '@/components/logo';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, FlaskConical, LayoutDashboard } from 'lucide-react';
+import { Calendar, FlaskConical, LayoutDashboard, BookUser } from 'lucide-react';
 import { DashboardHeader } from '@/components/dashboard/header';
 
 const menuItems = [
   { href: '/patient/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/patient/appointments', label: 'Appointments', icon: Calendar },
   { href: '/patient/medication-guide', label: 'Medication Guide', icon: FlaskConical },
+  { href: '/patient/medicine-cabinet', label: 'Medicine Cabinet', icon: BookUser },
 ];
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {

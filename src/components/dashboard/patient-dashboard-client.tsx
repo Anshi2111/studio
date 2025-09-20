@@ -4,18 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { mockAppointments, mockHealthStats, mockPrescriptions, mockHealthGoals, mockUserMedications } from '@/lib/mock-data';
-import type { Appointment, HealthStat, Prescription, HealthGoal, UserMedication } from '@/lib/types';
+import { mockAppointments, mockHealthStats, mockPrescriptions, mockHealthGoals } from '@/lib/mock-data';
+import type { Appointment, HealthStat, Prescription, HealthGoal } from '@/lib/types';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { Calendar, HeartPulse, Pill, Trophy, Target, Star, AlertTriangle, PlusCircle, BookUser } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { Calendar, HeartPulse, Pill, Trophy, Target, Star } from 'lucide-react';
 
 function PrescriptionCard({ prescription }: { prescription: Prescription }) {
   return (
@@ -39,43 +32,11 @@ function PrescriptionCard({ prescription }: { prescription: Prescription }) {
   );
 }
 
-function getExpiryBadge(expiryDate: string): React.ReactNode {
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
-
-    if (daysUntilExpiry < 0) {
-        return <Badge variant="destructive">Expired</Badge>;
-    }
-    if (daysUntilExpiry <= 30) {
-        return <Badge variant="destructive" className="bg-yellow-500/80 text-white hover:bg-yellow-500/90">Expires in {daysUntilExpiry} days</Badge>;
-    }
-    return <Badge variant="secondary">{format(expiry, "PPP")}</Badge>;
-}
-
-
 export function PatientDashboardClient() {
   const appointments: Appointment[] = mockAppointments;
   const prescriptions: Prescription[] = mockPrescriptions;
   const healthStats: HealthStat[] = mockHealthStats;
   const healthGoals: HealthGoal[] = mockHealthGoals;
-  const [userMedications, setUserMedications] = useState<UserMedication[]>(mockUserMedications);
-  const [newMedName, setNewMedName] = useState('');
-  const [newMedExpiry, setNewMedExpiry] = useState('');
-
-  const handleAddMedication = () => {
-    if (newMedName && newMedExpiry) {
-      const newMed: UserMedication = {
-        id: `um${userMedications.length + 1}`,
-        name: newMedName,
-        purchaseDate: new Date().toISOString().split('T')[0],
-        expiryDate: newMedExpiry,
-      };
-      setUserMedications([...userMedications, newMed]);
-      setNewMedName('');
-      setNewMedExpiry('');
-    }
-  };
 
   const chartConfig = {
     systolic: {
@@ -159,44 +120,6 @@ export function PatientDashboardClient() {
         </CardContent>
       </Card>
       
-        <Card className="lg:col-span-3 transition-all hover:shadow-lg hover:scale-[1.01]">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-headline"><BookUser className="text-primary" /> My Medicine Cabinet</CardTitle>
-                <CardDescription>Track your personal over-the-counter medications and their expiry dates.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid gap-6 md:grid-cols-2">
-                    <div>
-                        <h3 className="font-semibold mb-3">Your Medications</h3>
-                        <div className="space-y-2">
-                            {userMedications.map(med => (
-                                <div key={med.id} className="flex items-center justify-between p-2 rounded-md border bg-muted/50">
-                                    <span className="font-medium">{med.name}</span>
-                                    {getExpiryBadge(med.expiryDate)}
-                                </div>
-                            ))}
-                            {userMedications.length === 0 && <p className="text-sm text-muted-foreground">You haven't added any medications yet.</p>}
-                        </div>
-                    </div>
-                    <div className="space-y-4 rounded-lg border p-4">
-                        <h3 className="font-semibold">Add a New Medicine</h3>
-                        <div className="space-y-2">
-                            <Label htmlFor="med-name">Medicine Name</Label>
-                            <Input id="med-name" placeholder="e.g., Tylenol" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="med-expiry">Expiry Date</Label>
-                            <Input id="med-expiry" type="date" value={newMedExpiry} onChange={e => setNewMedExpiry(e.target.value)} />
-                        </div>
-                        <Button onClick={handleAddMedication} className="w-full">
-                            <PlusCircle className="mr-2 h-4 w-4"/>
-                            Add to Cabinet
-                        </Button>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
       <Card className="lg:col-span-3 transition-all hover:shadow-lg hover:scale-[1.01]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-headline"><Trophy className="text-yellow-500" /> Health Goals & Achievements</CardTitle>
