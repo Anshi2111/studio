@@ -61,6 +61,7 @@ const prompt = ai.definePrompt({
   Medication Name: {{{medicationName}}}
   Purchase Date: {{{purchaseDate}}}
   User Email: {{{email}}}
+  Sales Records: {{{json salesRecords}}}
   
   If you find an expiry date, return it. If you cannot find a matching record, return nothing.`,
 });
