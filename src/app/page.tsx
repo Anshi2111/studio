@@ -41,7 +41,7 @@ export default function Home() {
               </Button>
             </div>
             <div className="relative h-64 md:h-full flex items-center justify-center">
-               <Image src="https://picsum.photos/seed/doctor-patient/600/400" alt="Doctor with a patient" width={600} height={400} className="rounded-lg shadow-xl" data-ai-hint="doctor patient" />
+               <Image src="https://picsum.photos/seed/doctor-professional/600/400" alt="Professional doctor" width={600} height={400} className="rounded-lg shadow-xl" data-ai-hint="doctor professional" />
             </div>
           </div>
         </section>
