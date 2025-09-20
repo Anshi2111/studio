@@ -47,3 +47,10 @@ export type HealthGoal = {
     title: string;
     progress: number;
 };
+
+export type UserMedication = {
+    id: string;
+    name: string;
+    purchaseDate: string;
+    expiryDate: string;
+};

@@ -1,4 +1,4 @@
-import type { Appointment, Prescription, HealthStat, PharmacyPrescription, InventoryItem, SalesData, HealthGoal } from './types';
+import type { Appointment, Prescription, HealthStat, PharmacyPrescription, InventoryItem, SalesData, HealthGoal, UserMedication } from './types';
 
 export const mockAppointments: Appointment[] = [
   { id: '1', doctor: 'Dr. Evelyn Reed', specialty: 'Cardiology', date: '2024-08-15', time: '10:00 AM', status: 'Upcoming' },
@@ -47,4 +47,9 @@ export const mockHealthGoals: HealthGoal[] = [
     { id: 'g1', title: 'Walk 10,000 steps daily', progress: 75 },
     { id: 'g2', title: 'Drink 8 glasses of water', progress: 90 },
     { id: 'g3', title: 'Weekly mindfulness session', progress: 50 },
+];
+
+export const mockUserMedications: UserMedication[] = [
+    { id: 'um1', name: 'Advil', purchaseDate: '2024-07-01', expiryDate: '2025-06-01' },
+    { id: 'um2', name: 'Benadryl', purchaseDate: '2024-06-15', expiryDate: '2024-08-30' },
 ];
