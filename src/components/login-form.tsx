@@ -32,8 +32,8 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
           <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="name@example.com" defaultValue={userType === 'Patient' ? 'patient@healthure.com' : 'pharmacist@healthure.com'} />
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" type="tel" placeholder="e.g., (123) 456-7890" defaultValue={userType === 'Patient' ? '123-456-7890' : '987-654-3210'} />
               </div>
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="password">Password</Label>
