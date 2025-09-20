@@ -19,13 +19,14 @@ const getExpiryDateForMedication = ai.defineTool(
       medicationName: z.string().describe('The name of the medication to look up.'),
       purchaseDate: z.string().describe('The date the medication was purchased by the patient in YYYY-MM-DD format.'),
       salesRecords: z.array(z.any()).describe('An array of sales record objects from the pharmacy.'),
+      email: z.string().email().describe("The user's email address to verify the purchase."),
     }),
     outputSchema: z.object({
         expiryDate: z.string().optional().describe('The expiry date of the medication in YYYY-MM-DD format.'),
     }),
   },
   async (input) => {
-    return getExpiryDateForMedicationTool(input.medicationName, input.purchaseDate, input.salesRecords);
+    return getExpiryDateForMedicationTool(input.medicationName, input.purchaseDate, input.salesRecords, input.email);
   }
 );
 
