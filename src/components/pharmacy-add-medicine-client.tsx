@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
@@ -14,9 +14,11 @@ const MOCK_INVENTORY_KEY = 'healthure-inventory';
 export function AddMedicineClient() {
   const [isSaving, startSaveTransition] = useTransition();
   const [scannedData, setScannedData] = useState<{ barcode: string, name?: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [isManualEntry, setIsManualEntry] = useState(false);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
 
   // Form state
   const [medName, setMedName] = useState('');
@@ -28,6 +30,8 @@ export function AddMedicineClient() {
   const [barcode, setBarcode] = useState('');
 
   useEffect(() => {
+    if (isManualEntry || scannedData) return;
+
     const scanner = new Html5QrcodeScanner(
       'reader',
       {
@@ -40,10 +44,12 @@ export function AddMedicineClient() {
       },
       /* verbose= */ false
     );
-    scannerRef.current = scanner.html5Qrcode;
+    scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string) {
-      handleBarcodeDetection(decodedText, scanner);
+      if (scannerRef.current?.isScanning) {
+        handleBarcodeDetection(decodedText, scanner);
+      }
     }
 
     function onScanFailure(error: any) {
@@ -51,16 +57,20 @@ export function AddMedicineClient() {
     }
 
     scanner.render(onScanSuccess, onScanFailure);
+    setIsScanning(true);
 
     return () => {
-      scanner.clear().catch(error => {
-        console.error("Failed to clear html5QrcodeScanner.", error);
-      });
+      if (scanner.getState() === 2) { // 2 is SCANNING state
+        scanner.clear().catch(error => {
+          console.error("Failed to clear html5QrcodeScanner.", error);
+        });
+      }
     };
-  }, []);
+  }, [isManualEntry, scannedData]);
   
   const handleBarcodeDetection = (decodedText: string, scanner: Html5QrcodeScanner) => {
     scanner.pause();
+    setIsScanning(false);
     setBarcode(decodedText);
 
     const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
@@ -97,10 +107,7 @@ export function AddMedicineClient() {
   const handleClear = () => {
     resetForm();
     setScannedData(null);
-    setError(null);
-    if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.resume();
-    }
+    setIsManualEntry(false);
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item or enter details manually.",
@@ -111,105 +118,127 @@ export function AddMedicineClient() {
       startSaveTransition(() => {
           const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
           
-          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: barcode };
+          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: barcode, id: `inv_${Date.now()}` };
           
           inventory.push(newMedicine);
           
           localStorage.setItem(MOCK_INVENTORY_KEY, JSON.stringify(inventory));
 
-          console.log("Saving new medicine:", newMedicine);
-
           toast({
               title: "Medicine Added!",
               description: `${medName} has been successfully added to your inventory.`,
           });
-          setScannedData(null);
-          resetForm();
-          if (scannerRef.current) {
-            scannerRef.current.resume();
-          }
+          handleClear();
       });
   }
+  
+  const handleManualBarcodeCheck = () => {
+    if(!barcode) {
+        toast({variant: "destructive", title: "Barcode Required", description: "Please enter a barcode number."});
+        return;
+    }
+     const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+    const foundItem = inventory.find((item: any) => item.barcode === barcode);
 
+    if (foundItem) {
+        toast({
+            title: "Medicine Found!",
+            description: `${foundItem.medName} is already in the system.`,
+        });
+        setMedName(foundItem.medName);
+    } else {
+        toast({
+            variant: 'default',
+            title: "New Barcode",
+            description: "Please fill in the rest of the details for this new medicine.",
+        });
+    }
+    setScannedData({barcode});
+    setIsManualEntry(true);
+  }
+
+  const isFormVisible = scannedData || isManualEntry;
   const isFormValid = medName && batchNo && mfgDate && expiryDate && quantity && supplier && barcode;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl font-headline">
-            <Camera className="h-6 w-6" />
-            Scan Barcode
-          </CardTitle>
-          <CardDescription>
-            Place a medicine's barcode in the viewfinder to scan it.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="relative">
-          <div id="reader" className="w-full"></div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-lg">
-        <CardHeader>
+      {!isFormVisible && (
+        <Card className="shadow-lg md:col-span-2">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-headline">
-                <Package className="h-6 w-6" />
-                Medicine Details
+              <Camera className="h-6 w-6" />
+              Scan Barcode
             </CardTitle>
             <CardDescription>
-                Fill in the details for the new medicine below.
+              Place a medicine's barcode in the viewfinder to scan it, or enter it manually.
             </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {!scannedData && (
-                 <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Info className="h-10 w-10" />
-                        <p className="font-medium">Scan a barcode to start.</p>
+          </CardHeader>
+          <CardContent className="relative">
+            <div id="reader" className="w-full"></div>
+          </CardContent>
+           <CardFooter>
+            <Button variant="outline" className="w-full" onClick={() => setIsManualEntry(true)}>
+                <Keyboard className="mr-2 h-4 w-4" />
+                Enter Barcode Manually
+            </Button>
+           </CardFooter>
+        </Card>
+      )}
+
+      {isFormVisible && (
+        <>
+          <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl font_headline">
+                    <Package className="h-6 w-6" />
+                    Medicine Details
+                </CardTitle>
+                <CardDescription>
+                    Fill in the details for the new medicine below.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-1">
+                    <Label htmlFor="barcode">Barcode</Label>
+                    <div className="flex gap-2">
+                        <Input id="barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} readOnly={!!scannedData && !isManualEntry} />
+                        {isManualEntry && !scannedData && (
+                            <Button onClick={handleManualBarcodeCheck}>Check</Button>
+                        )}
                     </div>
                 </div>
-            )}
-             {scannedData && (
-                 <div className="space-y-3 animate-in fade-in-50">
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                        <Label htmlFor="barcode">Barcode</Label>
-                        <Input id="barcode" value={barcode} readOnly disabled />
+                        <Label htmlFor="med-name">Medicine Name</Label>
+                        <Input id="med-name" value={medName} onChange={(e) => setMedName(e.target.value)} placeholder="e.g., Tylenol 500mg" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <Label htmlFor="med-name">Medicine Name</Label>
-                            <Input id="med-name" value={medName} onChange={(e) => setMedName(e.target.value)} placeholder="e.g., Tylenol 500mg" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="batch-no">Batch No.</Label>
-                            <Input id="batch-no" value={batchNo} onChange={(e) => setBatchNo(e.target.value)} placeholder="e.g., AB12345" />
-                        </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="batch-no">Batch No.</Label>
+                        <Input id="batch-no" value={batchNo} onChange={(e) => setBatchNo(e.target.value)} placeholder="e.g., AB12345" />
                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <Label htmlFor="mfg-date">Manufacturing Date</Label>
-                            <Input id="mfg-date" type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="expiry-date">Expiry Date</Label>
-                            <Input id="expiry-date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
-                        </div>
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="mfg-date">Manufacturing Date</Label>
+                        <Input id="mfg-date" type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
                     </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <Label htmlFor="quantity">Quantity</Label>
-                            <Input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g., 100" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="supplier">Supplier</Label>
-                            <Input id="supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g., MedDistributors Inc." />
-                        </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="expiry-date">Expiry Date</Label>
+                        <Input id="expiry-date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
                     </div>
-                 </div>
-             )}
-        </CardContent>
-         {scannedData && (
-            <CardFooter className="grid grid-cols-2 gap-2">
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="quantity">Quantity</Label>
+                        <Input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g., 100" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="supplier">Supplier</Label>
+                        <Input id="supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g., MedDistributors Inc." />
+                    </div>
+                </div>
+            </CardContent>
+             <CardFooter className="grid grid-cols-2 gap-2">
                 <Button onClick={handleSaveMedicine} disabled={isSaving || !isFormValid} className="w-full">
                     {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add to Inventory</>}
                 </Button>
@@ -218,9 +247,15 @@ export function AddMedicineClient() {
                     Clear & Rescan
                 </Button>
             </CardFooter>
-         )}
-      </Card>
-
+          </Card>
+           <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Info className="h-10 w-10" />
+                    <p className="font-medium">Please fill out all fields to add the medicine to your inventory.</p>
+                </div>
+            </div>
+        </>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Keyboard } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -21,12 +21,21 @@ export function RecordSaleClient() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [manualBarcode, setManualBarcode] = useState('');
+
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
   const [quantity, setQuantity] = useState('');
 
   useEffect(() => {
+    if (isManualEntry) {
+        if(scannerRef.current?.isScanning) {
+            scannerRef.current.clear();
+        }
+        return;
+    };
     const scanner = new Html5QrcodeScanner(
       'reader',
       {
@@ -41,8 +50,10 @@ export function RecordSaleClient() {
     );
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
-        scanner.pause();
-        handleBarcodeScanned(decodedText);
+        if (scannerRef.current?.isScanning) {
+            scanner.pause();
+            handleBarcodeScanned(decodedText);
+        }
     }
 
     function onScanFailure(error: any) {
@@ -53,11 +64,13 @@ export function RecordSaleClient() {
     scannerRef.current = scanner;
     
     return () => {
-      scanner.clear().catch(error => {
-        console.error("Failed to clear html5QrcodeScanner.", error);
-      });
+      if (scanner.getState() === 2) {
+        scanner.clear().catch(error => {
+            console.error("Failed to clear html5QrcodeScanner.", error);
+        });
+      }
     };
-  }, []);
+  }, [isManualEntry]);
 
   const handleBarcodeScanned = (barcode: string) => {
     setError(null);
@@ -91,15 +104,14 @@ export function RecordSaleClient() {
   const resetForm = () => {
       setPatientPhone('');
       setQuantity('');
+      setManualBarcode('');
   };
 
   const handleRescan = () => {
       setScannedMedicine(null);
       setError(null);
+      setIsManualEntry(false);
       resetForm();
-      if (scannerRef.current) {
-          scannerRef.current.resume();
-      }
   }
   
   const handleRecordSale = () => {
@@ -147,11 +159,7 @@ export function RecordSaleClient() {
 
         // In a real app, you would also update the inventory quantity here.
 
-        setScannedMedicine(null);
-        resetForm();
-        if (scannerRef.current) {
-          scannerRef.current.resume();
-        }
+        handleRescan();
     });
   };
 
@@ -166,11 +174,11 @@ export function RecordSaleClient() {
             Scan Medicine to Sell
           </CardTitle>
           <CardDescription>
-            Scan the barcode of the medicine you want to sell.
+            Scan the barcode or enter it manually.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="reader" className="w-full"></div>
+            {!isManualEntry && <div id="reader" className="w-full"></div>}
             {error && !scannedMedicine && (
                 <Alert variant="destructive" className="mt-4">
                     <ServerCrash className="h-4 w-4" />
@@ -178,11 +186,22 @@ export function RecordSaleClient() {
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
+            {isManualEntry && (
+                <div className="space-y-4">
+                    <Label htmlFor="manual-barcode">Barcode Number</Label>
+                    <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter barcode..."/>
+                    <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)}>Find Medicine</Button>
+                </div>
+            )}
         </CardContent>
-        <CardFooter>
-            <Button onClick={handleRescan} className="w-full" disabled={!scannedMedicine && !error}>
+        <CardFooter className="grid gap-2 grid-cols-2">
+            <Button onClick={handleRescan} className="w-full">
                 <ScanLine className="mr-2 h-4 w-4" />
-                Scan Next Item
+                {scannedMedicine || isManualEntry ? 'Start New Sale' : 'Scanning...'}
+            </Button>
+             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setError(null); }}>
+                <Keyboard className="mr-2 h-4 w-4" />
+                {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>
         </CardFooter>
       </Card>
@@ -202,7 +221,7 @@ export function RecordSaleClient() {
                  <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Info className="h-10 w-10" />
-                        <p className="font-medium">Scan a medicine to begin.</p>
+                        <p className="font-medium">Scan or enter a medicine barcode to begin.</p>
                     </div>
                 </div>
             )}
