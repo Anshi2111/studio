@@ -8,11 +8,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, LogIn, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Loader2, AlertCircle, User, Briefcase } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-export function MagicLinkForm() {
+interface MagicLinkFormProps {
+  userType: 'patient' | 'pharmacist';
+}
+
+export function MagicLinkForm({ userType }: MagicLinkFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -21,31 +25,32 @@ export function MagicLinkForm() {
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(true);
 
+  const redirectPath = userType === 'patient' ? '/patient/dashboard' : '/pharmacy/dashboard';
+  const loginPath = userType === 'patient' ? '/login/patient' : '/login/pharmacist';
+  const title = userType === 'patient' ? 'Patient Portal' : 'Pharmacist Portal';
+  const icon = userType === 'patient' ? <User className="h-8 w-8 text-primary" /> : <Briefcase className="h-8 w-8 text-primary" />;
+
+
   useEffect(() => {
-    // This effect runs on the client-side when the component mounts.
-    // It checks if the current URL is a sign-in link.
     if (isSignInWithEmailLink(auth, window.location.href)) {
-      let emailFromStorage = window.localStorage.getItem('emailForSignIn');
+      let emailFromStorage = window.localStorage.getItem(`emailForSignIn-${userType}`);
       if (!emailFromStorage) {
-        // If the email is not in local storage, prompt the user for it.
-        emailFromStorage = window.prompt('Please provide your email for confirmation');
+        emailFromStorage = window.prompt(`Please provide your email for confirmation (${userType})`);
       }
 
       if (emailFromStorage) {
         setLoading(true);
         signInWithEmailLink(auth, emailFromStorage, window.location.href)
           .then((result) => {
-            window.localStorage.removeItem('emailForSignIn');
-            // You can check if the user is new or returning:
-            // const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
+            window.localStorage.removeItem(`emailForSignIn-${userType}`);
             toast({
               title: 'Successfully Signed In!',
-              description: 'Welcome back to Healthure.',
+              description: `Welcome to the ${title}.`,
             });
-            router.push('/patient/dashboard'); // Redirect to a dashboard page after login.
+            router.push(redirectPath);
           })
           .catch((error) => {
-            setError('Error signing in with email link. The link may be expired or invalid.');
+            setError('Error signing in with email link. The link may be expired or invalid. Please try again.');
             console.error(error);
             setLoading(false);
             setIsVerifying(false);
@@ -56,7 +61,7 @@ export function MagicLinkForm() {
     } else {
       setIsVerifying(false);
     }
-  }, [router, toast]);
+  }, [router, toast, userType, redirectPath, title]);
 
 
   const handleMagicLinkSignIn = async (e: React.FormEvent) => {
@@ -65,18 +70,13 @@ export function MagicLinkForm() {
     setError(null);
 
     const actionCodeSettings = {
-      // URL you want to redirect back to. The domain (www.example.com) must be
-      // authorized in the Firebase Console.
-      url: window.location.origin + '/login',
+      url: `${window.location.origin}${loginPath}`,
       handleCodeInApp: true,
     };
 
     try {
       await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      // The link was successfully sent. Inform the user.
-      // Save the email locally so you don't need to ask the user for it again
-      // if they open the link on the same device.
-      window.localStorage.setItem('emailForSignIn', email);
+      window.localStorage.setItem(`emailForSignIn-${userType}`, email);
       setEmailSent(true);
       toast({
         title: 'Check Your Email',
@@ -109,10 +109,11 @@ export function MagicLinkForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm shadow-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">{icon}</div>
+          <CardTitle className="text-3xl font-headline">{title}</CardTitle>
           <CardDescription>
-            {emailSent ? 'Check your inbox for the magic link!' : 'Enter your email to receive a login link.'}
+            {emailSent ? 'Check your inbox for the magic link!' : 'Enter your email to receive a passwordless login link.'}
           </CardDescription>
         </CardHeader>
 

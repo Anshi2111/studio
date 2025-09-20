@@ -1,7 +1,12 @@
 'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-import { MagicLinkForm } from '@/components/magic-link-form';
-
-export default function LoginPage() {
-  return <MagicLinkForm />;
+// This page is deprecated. Users should use role-specific login pages.
+export default function DeprecatedLoginPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
+  return null;
 }
