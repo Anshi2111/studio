@@ -5,81 +5,73 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Volume2, Play, Video } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Volume2, Play, VideoOff, Video } from 'lucide-react';
 import type { BarcodeMedicationInfoOutput } from '@/ai/flows/barcode-medication-info';
 import { getBarcodeInfo } from '@/app/actions/medication-guide';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
 export function BarcodeScannerClient() {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<BarcodeMedicationInfoOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [cameraLabel, setCameraLabel] = useState<string>('');
-  const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Camera access is not supported by your browser.');
-        setHasCameraPermission(false);
-        return;
-      }
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 5,
+        rememberLastUsedCamera: true,
+      },
+      /* verbose= */ false
+    );
+    scannerRef.current = scanner.html5Qrcode;
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          setCameraLabel(videoTrack.label);
-        }
+    function onScanSuccess(decodedText: string, decodedResult: any) {
+        setIsScanning(false);
+        scanner.pause();
+        handleBarcodeScanned(decodedText);
+    }
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this feature.',
-        });
-      }
-    };
+    function onScanFailure(error: any) {
+      // console.warn(`Code scan error = ${error}`);
+    }
 
-    getCameraPermission();
+    scanner.render(onScanSuccess, onScanFailure);
+    setIsScanning(scanner.isScanning);
 
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
+      scanner.clear().catch(error => {
+        console.error("Failed to clear html5QrcodeScanner.", error);
+      });
     };
-  }, [toast]);
+  }, []);
 
-  const captureFrame = () => {
-    if (!videoRef.current) {
-      setError('Video feed not available.');
-      return;
-    }
+  const handleBarcodeScanned = (barcode: string) => {
+    // We still need to send an "image" to the backend as the AI flow expects it.
+    // We'll create a simple canvas image containing the barcode text.
     const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    canvas.width = 400;
+    canvas.height = 100;
     const context = canvas.getContext('2d');
     if (!context) {
-      setError('Could not get canvas context.');
+      setError('Could not create canvas for barcode.');
       return;
     }
-    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
-  };
-
-  const handleScan = () => {
-    const imageDataUri = captureFrame();
-    if (!imageDataUri) return;
+    context.fillStyle = 'white';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'black';
+    context.font = '20px monospace';
+    context.textAlign = 'center';
+    context.fillText(`Barcode: ${barcode}`, canvas.width / 2, canvas.height / 2);
+    const imageDataUri = canvas.toDataURL('image/png');
 
     setError(null);
     setResult(null);
@@ -90,6 +82,11 @@ export function BarcodeScannerClient() {
         setResult(response.data);
       } else {
         setError(response.error || 'Failed to get information for this barcode.');
+        toast({
+          variant: 'destructive',
+          title: 'Analysis Failed',
+          description: 'Could not retrieve information for the scanned barcode.',
+        });
       }
     });
   };
@@ -99,6 +96,15 @@ export function BarcodeScannerClient() {
       audioRef.current.play();
     }
   };
+
+  const handleRescan = () => {
+      setResult(null);
+      setError(null);
+      if(scannerRef.current && !isScanning) {
+          scannerRef.current.resume();
+          setIsScanning(true);
+      }
+  }
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -113,36 +119,31 @@ export function BarcodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-          <video ref={videoRef} className="w-full aspect-video rounded-md bg-slate-200" autoPlay muted playsInline />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <ScanLine className="h-2/3 w-2/3 text-white/50 animate-pulse" />
-          </div>
-          {cameraLabel && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
-              <Video className="h-3 w-3" />
-              <span>{cameraLabel}</span>
-            </div>
-          )}
-          {hasCameraPermission === false && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Camera Access Required</AlertTitle>
-              <AlertDescription>
-                Please allow camera access to use this feature. You may need to change permissions in your browser settings.
-              </AlertDescription>
-            </Alert>
-          )}
+            <div id="reader" className="w-full"></div>
+             {error && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTitle>Scan Failed</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
         </CardContent>
-        <CardFooter>
-          <Button onClick={handleScan} disabled={isPending || !hasCameraPermission} className="w-full">
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing Barcode...
-              </>
-            ) : (
-              'Scan'
-            )}
-          </Button>
+         <CardFooter>
+            <Button onClick={handleRescan} disabled={isScanning || isPending} className="w-full">
+                {isScanning ? (
+                    <>
+                        <ScanLine className="mr-2 h-4 w-4 animate-pulse" />
+                        Scanning...
+                    </>
+                ) : isPending ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                    </>
+                )
+                : (
+                    'Scan Again'
+                )}
+            </Button>
         </CardFooter>
       </Card>
 
@@ -156,12 +157,7 @@ export function BarcodeScannerClient() {
             </div>
           </div>
         )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertTitle>Scan Failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        
         {result && (
           <Card className="shadow-lg animate-in fade-in-50">
             <CardHeader>
