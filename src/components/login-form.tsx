@@ -19,6 +19,8 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
   const { toast } = useToast();
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [phone, setPhone] = useState(userType === 'Patient' ? '123-456-7890' : '987-654-3210');
+
 
   const handleSendOtp = () => {
     // In a real app, you'd call an API to send the OTP.
@@ -31,25 +33,20 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
   };
 
   const handleLogin = () => {
-    if (userType === 'Patient') {
-      if (otp === '123456') { // Mock OTP check
-        router.push(redirectUrl);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Invalid OTP',
-          description: 'The OTP you entered is incorrect. Please try again.',
-        });
-      }
-    } else {
-      // In a real app, you'd have password authentication logic here.
+    if (otp === '123456') { // Mock OTP check for both users
       router.push(redirectUrl);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid OTP',
+        description: 'The OTP you entered is incorrect. Please try again.',
+      });
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (userType === 'Patient' && !otpSent) {
+    if (!otpSent) {
       handleSendOtp();
     } else {
       handleLogin();
@@ -62,9 +59,7 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-headline">{userType} Portal</CardTitle>
           <CardDescription>
-            {userType === 'Patient' 
-              ? 'Enter your phone number to receive a login code.' 
-              : 'Welcome back! Please enter your details.'}
+            Enter your phone number to receive a login code.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -72,17 +67,10 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" placeholder="e.g., (123) 456-7890" defaultValue={userType === 'Patient' ? '123-456-7890' : '987-654-3210'} readOnly={otpSent} />
+                <Input id="phone" type="tel" placeholder="e.g., (123) 456-7890" value={phone} onChange={(e) => setPhone(e.target.value)} readOnly={otpSent} />
               </div>
               
-              {userType === 'Pharmacist' && (
-                <div className="flex flex-col space-y-1.5">
-                  <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" placeholder="••••••••" defaultValue="password" />
-                </div>
-              )}
-
-              {userType === 'Patient' && otpSent && (
+              {otpSent && (
                  <div className="flex flex-col space-y-1.5 animate-in fade-in-50">
                   <Label htmlFor="otp">One-Time Password</Label>
                   <Input id="otp" type="text" placeholder="e.g., 123456" value={otp} onChange={(e) => setOtp(e.target.value)} />
@@ -93,19 +81,13 @@ export function LoginForm({ userType, redirectUrl }: LoginFormProps) {
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={handleSubmit}>
-            {userType === 'Patient' ? (
-              otpSent ? (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" /> Verify & Login
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="mr-2 h-4 w-4" /> Send OTP
-                </>
-              )
+            {otpSent ? (
+              <>
+                <LogIn className="mr-2 h-4 w-4" /> Verify & Login
+              </>
             ) : (
               <>
-                <LogIn className="mr-2 h-4 w-4" /> Login
+                <MessageSquare className="mr-2 h-4 w-4" /> Send OTP
               </>
             )}
           </Button>
