@@ -11,14 +11,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Moon, Sun } from 'lucide-react';
 import Link from 'next/link';
+import { useTheme } from '@/hooks/use-theme';
 
 interface DashboardHeaderProps {
   userType: 'Patient' | 'Pharmacist';
 }
 
 export function DashboardHeader({ userType }: DashboardHeaderProps) {
+  const { theme, toggleTheme } = useTheme();
   const userInitial = userType.charAt(0);
   const homeUrl = '/';
 
@@ -29,6 +31,10 @@ export function DashboardHeader({ userType }: DashboardHeaderProps) {
       </div>
       <div className="flex-1">
       </div>
+      <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">

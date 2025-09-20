@@ -41,3 +41,9 @@ export type SalesData = {
   month: string;
   revenue: number;
 };
+
+export type HealthGoal = {
+    id: string;
+    title: string;
+    progress: number;
+};

@@ -27,7 +27,7 @@ export function PharmacyDashboardClient() {
   return (
     <div className="grid gap-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="transition-all hover:shadow-lg hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue (Last 30d)</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -37,7 +37,7 @@ export function PharmacyDashboardClient() {
             <p className="text-xs text-muted-foreground">+15.2% from last month</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-all hover:shadow-lg hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Prescriptions</CardTitle>
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
@@ -47,7 +47,7 @@ export function PharmacyDashboardClient() {
             <p className="text-xs text-muted-foreground">To be filled</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-all hover:shadow-lg hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -57,7 +57,7 @@ export function PharmacyDashboardClient() {
             <p className="text-xs text-muted-foreground">Require re-ordering</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="transition-all hover:shadow-lg hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Inventory Items</CardTitle>
             <Archive className="h-4 w-4 text-muted-foreground" />
@@ -70,7 +70,7 @@ export function PharmacyDashboardClient() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
+        <Card className="lg:col-span-4 transition-all hover:shadow-lg hover:scale-[1.01]">
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
           </CardHeader>
@@ -88,7 +88,7 @@ export function PharmacyDashboardClient() {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 transition-all hover:shadow-lg hover:scale-[1.01]">
           <CardHeader>
             <CardTitle>Recent Prescriptions</CardTitle>
             <CardDescription>Newest prescriptions to be filled.</CardDescription>
@@ -104,7 +104,7 @@ export function PharmacyDashboardClient() {
               </TableHeader>
               <TableBody>
                 {prescriptions.slice(0, 5).map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id} className="transition-colors hover:bg-muted/50">
                     <TableCell>{p.patient}</TableCell>
                     <TableCell className="truncate max-w-[120px]">{p.medication}</TableCell>
                     <TableCell>
