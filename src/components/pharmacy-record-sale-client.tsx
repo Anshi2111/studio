@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -31,57 +31,14 @@ export function RecordSaleClient() {
   const [patientEmail, setPatientEmail] = useState('');
   const [quantity, setQuantity] = useState('');
 
-  useEffect(() => {
-    if (isManualEntry || scannedMedicine) {
-        if(scannerRef.current?.isScanning) {
-            scannerRef.current.clear();
-        }
-        return;
-    };
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-        rememberLastUsedCamera: true,
-      },
-      /* verbose= */ false
-    );
-
-    function onScanSuccess(decodedText: string, decodedResult: any) {
-        if (scannerRef.current?.isScanning) {
-            scanner.pause();
-            handleBarcodeScanned(decodedText);
-        }
-    }
-
-    function onScanFailure(error: any) {
-      // console.warn(`Code scan error = ${error}`);
-    }
-
-    if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure).then(() => {
-            const videoElement = document.querySelector('#reader video');
-            if(videoElement) {
-               videoRef.current = videoElement as HTMLVideoElement;
-            }
-       });
-        scannerRef.current = scanner;
-    }
-    
-    return () => {
-      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
-        scannerRef.current.clear().catch(error => {
-            console.error("Failed to clear html5QrcodeScanner.", error);
-        });
-      }
-    };
-  }, [isManualEntry, scannedMedicine]);
-
-  const handleBarcodeScanned = (barcode: string) => {
+  const resetForm = () => {
+      setPatientPhone('');
+      setPatientEmail('');
+      setQuantity('');
+      setManualBarcode('');
+  };
+  
+  const handleBarcodeScanned = useCallback((barcode: string) => {
     setError(null);
     setScannedMedicine(null);
     resetForm();
@@ -108,7 +65,70 @@ export function RecordSaleClient() {
           description: "This QR code is not in your inventory system."
       })
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (isManualEntry || scannedMedicine) {
+        if(scannerRef.current?.isScanning) {
+            scannerRef.current.clear();
+        }
+        return;
+    };
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
+        },
+        fps: 5,
+        rememberLastUsedCamera: true,
+      },
+      /* verbose= */ false
+    );
+
+    function onScanSuccess(decodedText: string, decodedResult: any) {
+        if (scannerRef.current?.isScanning) {
+            scanner.pause();
+            
+            if (videoRef.current) {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoRef.current.videoWidth;
+                canvas.height = videoRef.current.videoHeight;
+                const context = canvas.getContext('2d');
+                if (context) {
+                    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                    handleBarcodeScanned(decodedText);
+                    return;
+                }
+            }
+            // Fallback
+            handleBarcodeScanned(decodedText);
+        }
+    }
+
+    function onScanFailure(error: any) {
+      // console.warn(`Code scan error = ${error}`);
+    }
+
+    if (document.getElementById('reader')?.innerHTML === "") {
+        scanner.render(onScanSuccess, onScanFailure).then(() => {
+            const videoElement = document.querySelector('#reader video');
+            if(videoElement) {
+               videoRef.current = videoElement as HTMLVideoElement;
+            }
+       });
+        scannerRef.current = scanner;
+    }
+    
+    return () => {
+      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
+        scannerRef.current.clear().catch(error => {
+            console.error("Failed to clear html5QrcodeScanner.", error);
+        });
+      }
+    };
+  }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -122,13 +142,6 @@ export function RecordSaleClient() {
             toast({variant: "destructive", title: "Scan failed", description: "Could not read QR code from image."});
         });
     }
-  };
-
-  const resetForm = () => {
-      setPatientPhone('');
-      setPatientEmail('');
-      setQuantity('');
-      setManualBarcode('');
   };
 
   const handleRescan = () => {

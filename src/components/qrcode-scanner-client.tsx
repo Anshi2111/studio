@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,7 +21,47 @@ export function QRCodeScannerClient() {
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const handleAnalysis = useCallback((imageDataUri: string) => {
+    setError(null);
+    setResult(null);
+
+    startTransition(async () => {
+      const response = await getQRCodeInfo({ qrCodeImage: imageDataUri });
+      if (response.success && response.data) {
+        setResult(response.data);
+      } else {
+        setError(response.error || 'Failed to get information for this QR code.');
+        toast({
+          variant: 'destructive',
+          title: 'Analysis Failed',
+          description: 'Could not retrieve information for the scanned QR code.',
+        });
+      }
+    });
+  }, [toast]);
   
+  const handleCodeScanned = useCallback((scannedCode: string) => {
+    if (videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const imageDataUri = canvas.toDataURL('image/png');
+            handleAnalysis(imageDataUri);
+            return;
+        }
+    }
+    // Fallback if video snapshot fails
+    toast({
+        variant: 'destructive',
+        title: 'Scan Error',
+        description: 'Could not capture QR code image from video. Please try uploading a file.',
+    });
+  }, [handleAnalysis, toast]);
+
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
       'reader',
@@ -65,28 +105,7 @@ export function QRCodeScannerClient() {
         });
       }
     };
-  }, []);
-
-  const handleCodeScanned = (scannedCode: string) => {
-    if (videoRef.current) {
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        const context = canvas.getContext('2d');
-        if (context) {
-            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-            const imageDataUri = canvas.toDataURL('image/png');
-            handleAnalysis(imageDataUri);
-            return;
-        }
-    }
-    // Fallback if video snapshot fails
-    toast({
-        variant: 'destructive',
-        title: 'Scan Error',
-        description: 'Could not capture QR code image from video. Please try uploading a file.',
-    });
-  };
+  }, [handleCodeScanned]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -102,25 +121,6 @@ export function QRCodeScannerClient() {
     }
   };
 
-  const handleAnalysis = (imageDataUri: string) => {
-    setError(null);
-    setResult(null);
-
-    startTransition(async () => {
-      const response = await getQRCodeInfo({ qrCodeImage: imageDataUri });
-      if (response.success && response.data) {
-        setResult(response.data);
-      } else {
-        setError(response.error || 'Failed to get information for this QR code.');
-        toast({
-          variant: 'destructive',
-          title: 'Analysis Failed',
-          description: 'Could not retrieve information for the scanned QR code.',
-        });
-      }
-    });
-  };
-  
   const playAudio = () => {
     if (audioRef.current) {
       audioRef.current.play();

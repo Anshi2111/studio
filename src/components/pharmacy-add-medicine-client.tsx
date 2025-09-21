@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,30 @@ export function AddMedicineClient() {
   const [supplier, setSupplier] = useState('');
   const [barcode, setBarcode] = useState('');
 
+  const handleBarcodeDetection = useCallback((decodedText: string) => {
+    setIsScanning(false);
+    setBarcode(decodedText);
+
+    const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
+    const foundItem = inventory.find((item: any) => item.barcode === decodedText);
+
+    if (foundItem) {
+        setScannedData({ barcode: decodedText, name: foundItem.medName });
+        toast({
+            title: "Medicine Found!",
+            description: `${foundItem.medName} is already in the system. You can update its inventory.`,
+        });
+        setMedName(foundItem.medName);
+    } else {
+        setScannedData({ barcode: decodedText });
+        toast({
+            variant: 'default',
+            title: "New Medicine Detected",
+            description: "This QR code isn't in your system. Please add its details manually.",
+        });
+    }
+  }, [toast]);
+
   useEffect(() => {
     if (isManualEntry || scannedData) {
       if (scannerRef.current?.isScanning) {
@@ -54,6 +78,20 @@ export function AddMedicineClient() {
 
     function onScanSuccess(decodedText: string) {
         scanner.pause();
+        
+        if (videoRef.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const context = canvas.getContext('2d');
+            if (context) {
+                context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+                // The handleBarcodeDetection expects the decoded text, not the image
+                handleBarcodeDetection(decodedText);
+                return;
+            }
+        }
+        // Fallback if video snapshot fails or not available
         handleBarcodeDetection(decodedText);
     }
 
@@ -78,32 +116,8 @@ export function AddMedicineClient() {
         });
       }
     };
-  }, [isManualEntry, scannedData]);
+  }, [isManualEntry, scannedData, handleBarcodeDetection]);
   
-  const handleBarcodeDetection = (decodedText: string) => {
-    setIsScanning(false);
-    setBarcode(decodedText);
-
-    const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-    const foundItem = inventory.find((item: any) => item.barcode === decodedText);
-
-    if (foundItem) {
-        setScannedData({ barcode: decodedText, name: foundItem.medName });
-        toast({
-            title: "Medicine Found!",
-            description: `${foundItem.medName} is already in the system. You can update its inventory.`,
-        });
-        setMedName(foundItem.medName);
-    } else {
-        setScannedData({ barcode: decodedText });
-        toast({
-            variant: 'default',
-            title: "New Medicine Detected",
-            description: "This QR code isn't in your system. Please add its details manually.",
-        });
-    }
-  }
-
 
   const resetForm = () => {
       setMedName('');
