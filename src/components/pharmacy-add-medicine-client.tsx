@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, QrCode } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -18,6 +18,7 @@ export function AddMedicineClient() {
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   // Form state
@@ -30,7 +31,12 @@ export function AddMedicineClient() {
   const [barcode, setBarcode] = useState('');
 
   useEffect(() => {
-    if (isManualEntry || scannedData) return;
+    if (isManualEntry || scannedData) {
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.clear();
+      }
+      return;
+    }
 
     const scanner = new Html5QrcodeScanner(
       'reader',
@@ -55,21 +61,23 @@ export function AddMedicineClient() {
     function onScanFailure(error: any) {
       // console.warn(`Code scan error = ${error}`);
     }
-
-    scanner.render(onScanSuccess, onScanFailure);
-    setIsScanning(true);
+    
+    if (document.getElementById('reader')?.innerHTML === "") {
+        scanner.render(onScanSuccess, onScanFailure);
+        setIsScanning(true);
+    }
 
     return () => {
-      if (scanner.getState() === 2) { // 2 is SCANNING state
-        scanner.clear().catch(error => {
+      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
+        scannerRef.current.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });
       }
     };
   }, [isManualEntry, scannedData]);
   
-  const handleBarcodeDetection = (decodedText: string, scanner: Html5QrcodeScanner) => {
-    scanner.pause();
+  const handleBarcodeDetection = (decodedText: string, scanner?: Html5QrcodeScanner) => {
+    scanner?.pause();
     setIsScanning(false);
     setBarcode(decodedText);
 
@@ -108,6 +116,19 @@ export function AddMedicineClient() {
     resetForm();
     setScannedData(null);
     setIsManualEntry(false);
+    if(scannerRef.current && scannerRef.current.getState() === 3 /*PAUSED*/) {
+        // Re-render the scanner
+        const scanner = scannerRef.current;
+         if (document.getElementById('reader')?.innerHTML !== "") {
+            document.getElementById('reader')!.innerHTML = "";
+         }
+        scanner.render( (decodedText) => {
+            if (scannerRef.current?.isScanning) {
+                handleBarcodeDetection(decodedText, scanner);
+            }
+        }, () => {});
+    }
+
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item or enter details manually.",
@@ -157,6 +178,20 @@ export function AddMedicineClient() {
     setIsManualEntry(true);
   }
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const html5QrCode = new Html5QrcodeScanner('reader', {}, false);
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+            handleBarcodeDetection(decodedText);
+        })
+        .catch(err => {
+            toast({variant: "destructive", title: "Scan failed", description: "Could not read QR code from image."});
+        });
+    }
+  };
+
   const isFormVisible = scannedData || isManualEntry;
   const isFormValid = medName && batchNo && mfgDate && expiryDate && quantity && supplier && barcode;
 
@@ -170,17 +205,28 @@ export function AddMedicineClient() {
               Scan QR Code
             </CardTitle>
             <CardDescription>
-              Place a medicine's QR code in the viewfinder to scan it, or enter it manually.
+              Place a medicine's QR code in the viewfinder, or upload/enter it manually.
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
             <div id="reader" className="w-full"></div>
           </CardContent>
-           <CardFooter>
+           <CardFooter className="grid grid-cols-2 gap-2">
             <Button variant="outline" className="w-full" onClick={() => setIsManualEntry(true)}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 Enter QR Code Manually
             </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload QR Code
+            </Button>
+            <Input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*"
+            />
            </CardFooter>
         </Card>
       )}

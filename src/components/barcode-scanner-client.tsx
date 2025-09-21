@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Volume2, QrCode } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Volume2, Upload } from 'lucide-react';
 import type { QRCodeMedicationInfoOutput } from '@/ai/flows/qrcode-medication-info';
 import { getQRCodeInfo } from '@/app/actions/medication-guide';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Input } from './ui/input';
 
-export function BarcodeScannerClient() {
+export function QRCodeScannerClient() {
   const [isPending, startTransition] = useTransition();
   const [result, setResult] = useState<QRCodeMedicationInfoOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +19,7 @@ export function BarcodeScannerClient() {
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -42,14 +44,17 @@ export function BarcodeScannerClient() {
     function onScanFailure(error: any) {
       // console.warn(`Code scan error = ${error}`);
     }
+    
+    if (document.getElementById('reader')?.innerHTML === "") {
+        scanner.render(onScanSuccess, onScanFailure);
+        scannerRef.current = scanner;
+        setIsScanning(scanner.isScanning);
+    }
 
-    scanner.render(onScanSuccess, onScanFailure);
-    scannerRef.current = scanner;
-    setIsScanning(scanner.isScanning);
 
     return () => {
-      if (scanner.getState() === 2) { // SCANNING
-        scanner.clear().catch(error => {
+      if (scannerRef.current && scannerRef.current.getState() === 2) { // SCANNING
+        scannerRef.current.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });
       }
@@ -57,6 +62,8 @@ export function BarcodeScannerClient() {
   }, []);
 
   const handleCodeScanned = (scannedCode: string) => {
+    // This function creates a visual representation of the scanned code.
+    // This is useful when the QR code just contains text, like a serial number.
     const canvas = document.createElement('canvas');
     canvas.width = 400;
     canvas.height = 100;
@@ -73,6 +80,24 @@ export function BarcodeScannerClient() {
     context.fillText(`QR Code: ${scannedCode}`, canvas.width / 2, canvas.height / 2);
     const imageDataUri = canvas.toDataURL('image/png');
 
+    handleAnalysis(imageDataUri);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUri = e.target?.result as string;
+        if (dataUri) {
+          handleAnalysis(dataUri);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAnalysis = (imageDataUri: string) => {
     setError(null);
     setResult(null);
 
@@ -125,7 +150,7 @@ export function BarcodeScannerClient() {
             Scan Medication QR Code
           </CardTitle>
           <CardDescription>
-            Point your camera at the QR code on your medication packaging to get instant information.
+            Point your camera at the QR code or upload an image to get instant information.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
@@ -137,23 +162,28 @@ export function BarcodeScannerClient() {
                 </Alert>
               )}
         </CardContent>
-         <CardFooter>
-            <Button onClick={handleRescan} disabled={isScanning || isPending} className="w-full">
+         <CardFooter className="grid grid-cols-2 gap-2">
+            <Button onClick={handleRescan} disabled={isScanning || isPending}>
                 {isScanning ? (
                     <>
                         <ScanLine className="mr-2 h-4 w-4 animate-pulse" />
                         Scanning...
                     </>
-                ) : isPending ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                    </>
-                )
-                : (
+                ) : (
                     'Scan Again'
                 )}
             </Button>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload QR Code
+            </Button>
+            <Input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*"
+            />
         </CardFooter>
       </Card>
 

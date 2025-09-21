@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, User, Phone, Hash, Keyboard, Mail } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Upload } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -23,6 +23,7 @@ export function RecordSaleClient() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   // Form state
@@ -61,12 +62,14 @@ export function RecordSaleClient() {
       // console.warn(`Code scan error = ${error}`);
     }
 
-    scanner.render(onScanSuccess, onScanFailure);
-    scannerRef.current = scanner;
+    if (document.getElementById('reader')?.innerHTML === "") {
+        scanner.render(onScanSuccess, onScanFailure);
+        scannerRef.current = scanner;
+    }
     
     return () => {
-      if (scanner.getState() === 2) { // 2 is SCANNING state
-        scanner.clear().catch(error => {
+      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
+        scannerRef.current.clear().catch(error => {
             console.error("Failed to clear html5QrcodeScanner.", error);
         });
       }
@@ -99,6 +102,20 @@ export function RecordSaleClient() {
           title: "Medicine Not Found",
           description: "This QR code is not in your inventory system."
       })
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const html5QrCode = new Html5QrcodeScanner('reader', {}, false);
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+            handleBarcodeScanned(decodedText);
+        })
+        .catch(err => {
+            toast({variant: "destructive", title: "Scan failed", description: "Could not read QR code from image."});
+        });
     }
   };
 
@@ -181,7 +198,7 @@ export function RecordSaleClient() {
             Scan Medicine to Sell
           </CardTitle>
           <CardDescription>
-            Scan the QR code or enter it manually.
+            Scan, upload, or enter the QR code manually.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
@@ -204,12 +221,25 @@ export function RecordSaleClient() {
         <CardFooter className="grid gap-2 grid-cols-2">
             <Button onClick={handleRescan} className="w-full">
                 <ScanLine className="mr-2 h-4 w-4" />
-                {scannedMedicine || isManualEntry ? 'Start New Sale' : 'Scanning...'}
+                {scannedMedicine || isManualEntry ? 'New Sale' : 'Scanning...'}
             </Button>
              <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setError(null); }}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>
+            <div className="col-span-2">
+                <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload QR Code
+                </Button>
+                 <Input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*"
+                />
+            </div>
         </CardFooter>
       </Card>
 
