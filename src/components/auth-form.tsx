@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import {
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   AuthErrorCodes,
 } from 'firebase/auth';
@@ -32,23 +31,15 @@ export function AuthForm({ userType }: AuthFormProps) {
   const title = userType === 'patient' ? 'Patient Portal' : 'Pharmacist Portal';
   const icon = userType === 'patient' ? <User className="h-8 w-8 text-primary" /> : <Briefcase className="h-8 w-8 text-primary" />;
 
-  const handleAuthAction = async (action: 'signIn' | 'signUp') => {
+  const handleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      if (action === 'signIn') {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({
-          title: 'Login Successful!',
-          description: `Welcome back to the ${title}.`,
-        });
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast({
-          title: 'Account Created!',
-          description: `Welcome to the ${title}. You are now signed in.`,
-        });
-      }
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        title: 'Login Successful!',
+        description: `Welcome back to the ${title}.`,
+      });
       router.push(redirectPath);
     } catch (err: any) {
       let errorMessage = 'An unexpected error occurred. Please try again.';
@@ -67,12 +58,6 @@ export function AuthForm({ userType }: AuthFormProps) {
         case AuthErrorCodes.INVALID_EMAIL:
           errorMessage = 'Please enter a valid email address.';
           break;
-        case AuthErrorCodes.EMAIL_EXISTS:
-           errorMessage = 'An account with this email already exists. Please sign in instead.';
-           break;
-        case AuthErrorCodes.WEAK_PASSWORD:
-            errorMessage = 'The password is too weak. It must be at least 6 characters long.';
-            break;
         default:
           console.error(err);
           break;
@@ -91,7 +76,7 @@ export function AuthForm({ userType }: AuthFormProps) {
           <div className="flex justify-center">{icon}</div>
           <CardTitle className="text-3xl font-headline">{title}</CardTitle>
           <CardDescription>
-            Sign in or create an account to continue.
+            Sign in with your email and password.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -134,13 +119,9 @@ export function AuthForm({ userType }: AuthFormProps) {
           )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button onClick={() => handleAuthAction('signIn')} className="w-full" disabled={loading || !email || !password}>
+          <Button onClick={handleSignIn} className="w-full" disabled={loading || !email || !password}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Sign In
-          </Button>
-          <Button onClick={() => handleAuthAction('signUp')} className="w-full" variant="outline" disabled={loading || !email || !password}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Sign Up
           </Button>
         </CardFooter>
       </Card>
