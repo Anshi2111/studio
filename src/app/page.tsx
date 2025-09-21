@@ -5,10 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import { ArrowRight, BarChart, HeartPulse, ShieldCheck, Stethoscope, Pill, LogIn } from 'lucide-react';
 import { Suspense } from 'react';
-
-function Copyright() {
-  return <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
-}
+import { Copyright } from '@/components/copyright';
 
 export default function Home() {
   return (
