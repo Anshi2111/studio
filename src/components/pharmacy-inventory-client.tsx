@@ -16,7 +16,7 @@ interface InventoryItem {
     medName: string;
     batchNo: string;
     mfgDate: string;
-    expiryDate: string;
+    expDate: string;
     quantity: number;
     supplier: string;
 }
@@ -41,6 +41,9 @@ export function InventoryClient() {
     const getStatusBadge = (quantity: number, expiryDate: string) => {
         const today = new Date();
         const expiry = new Date(expiryDate);
+        if (!expiryDate || isNaN(expiry.getTime())) {
+            return <Badge variant="outline">Unknown</Badge>
+        }
         if (expiry < today) {
             return <Badge variant="destructive">Expired</Badge>;
         }
@@ -86,9 +89,9 @@ export function InventoryClient() {
                                 <TableCell className="font-medium">{item.medName}</TableCell>
                                 <TableCell>{item.batchNo}</TableCell>
                                 <TableCell>{item.quantity}</TableCell>
-                                <TableCell>{format(new Date(item.expiryDate), 'PPP')}</TableCell>
+                                <TableCell>{item.expDate ? format(new Date(item.expDate), 'PPP') : 'N/A'}</TableCell>
                                 <TableCell>{item.supplier}</TableCell>
-                                <TableCell>{getStatusBadge(item.quantity, item.expiryDate)}</TableCell>
+                                <TableCell>{getStatusBadge(item.quantity, item.expDate)}</TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
