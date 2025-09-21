@@ -74,8 +74,7 @@ export function RecordSaleClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-        scannerRef.current.clear();
-        scannerRef.current = null;
+        scannerRef.current.pause(true);
     }
     handleBarcodeScanned(decodedText);
   }, [handleBarcodeScanned]);
@@ -108,6 +107,9 @@ export function RecordSaleClient() {
       setErrorInfo(null);
       setMode('scanning');
       resetForm();
+      if(scannerRef.current && scannerRef.current.getState() !== 2) {
+        scannerRef.current.resume();
+      }
   }
   
   const handleRecordSale = () => {
@@ -207,7 +209,7 @@ export function RecordSaleClient() {
                         {errorInfo.qrCode && (
                            <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                                <Search className="h-4 w-4" />
-                               Search for this code on Google
+                               Search for this code online
                            </Link>
                         )}
                     </AlertDescription>
@@ -229,7 +231,7 @@ export function RecordSaleClient() {
             )}
         </CardContent>
         <CardFooter className="grid gap-2 grid-cols-1">
-            {!showScanner ? (
+            {scannedMedicine ? (
                  <Button onClick={handleNewSale} className="w-full" variant="outline" disabled={isFetching}>
                     <ScanLine className="mr-2 h-4 w-4" />
                     New Sale

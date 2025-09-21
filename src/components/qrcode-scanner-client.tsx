@@ -47,8 +47,7 @@ export function QRCodeScannerClient() {
 
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
-        scannerRef.current.clear();
-        scannerRef.current = null;
+        scannerRef.current.pause(true);
       }
       handleAnalysis(decodedText);
   }, [handleAnalysis]);
@@ -88,11 +87,22 @@ export function QRCodeScannerClient() {
     if (!file) return;
 
     if (scannerRef.current) {
-      scannerRef.current.clear();
-      scannerRef.current = null;
+      scannerRef.current.pause(true);
+    }
+    
+    // The library needs a DOM element to mount a hidden video element for processing.
+    // So we ensure a placeholder div exists, even if it's not the main scanner div.
+    const placeholderId = "reader-placeholder";
+    let placeholder = document.getElementById(placeholderId);
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.id = placeholderId;
+      placeholder.style.display = 'none';
+      document.body.appendChild(placeholder);
     }
 
-    const html5QrCode = new Html5Qrcode("reader-placeholder", false);
+
+    const html5QrCode = new Html5Qrcode(placeholderId, false);
     html5QrCode.scanFile(file, true)
         .then(decodedText => {
             handleAnalysis(decodedText);
@@ -109,6 +119,9 @@ export function QRCodeScannerClient() {
   const handleRescan = () => {
     setResult(null);
     setErrorInfo(null);
+    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 = SCANNING
+        scannerRef.current.resume();
+    }
   }
 
   const showScanner = !result && !errorInfo;
@@ -140,7 +153,7 @@ export function QRCodeScannerClient() {
                     {errorInfo.qrCode && (
                        <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                            <Search className="h-4 w-4" />
-                           Search for this code on Google
+                           Search for this code online
                        </Link>
                     )}
                   </AlertDescription>
@@ -154,7 +167,7 @@ export function QRCodeScannerClient() {
                   Scan Again
               </Button>
             )}
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={showScanner ? 'col-span-2' : ''}>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={!showScanner ? '' : 'col-span-2'}>
               <Upload className="mr-2 h-4 w-4" />
               Upload QR Code
             </Button>

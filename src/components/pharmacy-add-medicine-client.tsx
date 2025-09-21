@@ -68,8 +68,7 @@ export function AddMedicineClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-      scannerRef.current.clear();
-      scannerRef.current = null;
+      scannerRef.current.pause(true);
     }
     handleBarcodeDetection(decodedText);
   }, [handleBarcodeDetection]);
@@ -108,6 +107,9 @@ export function AddMedicineClient() {
 
   const handleNewScan = () => {
     resetForm();
+    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
+        scannerRef.current.resume();
+    }
     setMode('scanning');
     toast({
         title: "Ready to Scan",
@@ -242,7 +244,7 @@ export function AddMedicineClient() {
                         {errorInfo.qrCode && (
                             <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline text-primary">
                                <Search className="h-4 w-4" />
-                               Search for this code on Google
+                               Search for this code online
                            </Link>
                         )}
                     </div>
