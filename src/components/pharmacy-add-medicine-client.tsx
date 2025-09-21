@@ -4,116 +4,115 @@ import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
 export function AddMedicineClient() {
   const [isSaving, startSaveTransition] = useTransition();
-  const [scannedData, setScannedData] = useState<{ barcode: string, name?: string } | null>(null);
-  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [isFetching, startFetchTransition] = useTransition();
+  
+  const [isFormVisible, setIsFormVisible] = useState(false);
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [medName, setMedName] = useState('');
+  const [name, setName] = useState('');
   const [batchNo, setBatchNo] = useState('');
   const [mfgDate, setMfgDate] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
+  const [expDate, setExpDate] = useState('');
   const [quantity, setQuantity] = useState('');
   const [supplier, setSupplier] = useState('');
-  const [barcode, setBarcode] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const [source, setSource] = useState<'firestore' | 'public_api' | 'manual' | null>(null);
+
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
-    setBarcode(decodedText);
+    setQrCode(decodedText);
+    setIsFormVisible(true);
 
-    const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-    const foundItem = inventory.find((item: any) => item.barcode === decodedText);
+    startFetchTransition(async () => {
+        const response = await fetchMedicineDetails({ qrCode: decodedText });
+        if (response.success && response.data) {
+            const { data } = response;
+            setName(data.name);
+            setBatchNo(data.batchNo);
+            setMfgDate(data.mfgDate);
+            setExpDate(data.expDate);
+            setQuantity(data.quantity.toString());
+            setSupplier(data.supplier);
+            setSource(data.source);
+            toast({
+                title: "Medicine Found!",
+                description: `${data.name} details loaded from ${data.source === 'firestore' ? 'your database' : 'a public source'}.`,
+            });
+        } else {
+            setSource('manual');
+            toast({
+                variant: 'default',
+                title: "New Medicine Detected",
+                description: "Please add its details manually.",
+            });
+        }
+    });
 
-    if (foundItem) {
-        setScannedData({ barcode: decodedText, name: foundItem.medName });
-        toast({
-            title: "Medicine Found!",
-            description: `${foundItem.medName} is already in the system. You can update its inventory.`,
-        });
-        setMedName(foundItem.medName);
-    } else {
-        setScannedData({ barcode: decodedText });
-        toast({
-            variant: 'default',
-            title: "New Medicine Detected",
-            description: "This QR code isn't in your system. Please add its details manually.",
-        });
-    }
   }, [toast]);
 
   useEffect(() => {
-    if (isManualEntry || scannedData) {
+    if (isFormVisible) {
       if (scannerRef.current?.isScanning) {
         scannerRef.current.clear();
       }
       return;
     }
+    if (document.getElementById('reader')?.innerHTML !== "") return;
 
     const scanner = new Html5QrcodeScanner(
       'reader',
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-        rememberLastUsedCamera: true,
-      },
-      /* verbose= */ false
+      { qrbox: { width: 250, height: 250, }, fps: 5, rememberLastUsedCamera: true },
+      false
     );
     scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string) {
-        scanner.pause();
-        handleBarcodeDetection(decodedText);
+        if(scanner.getState() === 2) { // SCANNING
+            scanner.pause();
+            handleBarcodeDetection(decodedText);
+        }
     }
 
-    function onScanFailure(error: any) {
-      // console.warn(`Code scan error = ${error}`);
-    }
-    
-    if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure);
-    }
+    scanner.render(onScanSuccess, (err) => {});
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner.", error);
-        });
+      if (scannerRef.current && scannerRef.current.getState() !== 1) { // NOT_STARTED
+        scannerRef.current.clear().catch(error => console.error("Failed to clear scanner", error));
       }
     };
-  }, [isManualEntry, scannedData, handleBarcodeDetection]);
+  }, [isFormVisible, handleBarcodeDetection]);
   
 
   const resetForm = () => {
-      setMedName('');
+      setName('');
       setBatchNo('');
       setMfgDate('');
-      setExpiryDate('');
+      setExpDate('');
       setQuantity('');
       setSupplier('');
-      setBarcode('');
+      setQrCode('');
+      setSource(null);
   }
 
   const handleClear = () => {
     resetForm();
-    setScannedData(null);
-    setIsManualEntry(false);
-    
+    setIsFormVisible(false);
     toast({
         title: "Form Cleared",
-        description: "You can now scan a new item or enter details manually.",
+        description: "You can now scan a new item.",
     });
   };
 
@@ -121,7 +120,7 @@ export function AddMedicineClient() {
       startSaveTransition(() => {
           const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
           
-          const newMedicine = { medName, batchNo, mfgDate, expiryDate, quantity, supplier, barcode: barcode, id: `inv_${Date.now()}` };
+          const newMedicine = { medName: name, batchNo, mfgDate, expDate, quantity, supplier, barcode: qrCode, id: `inv_${Date.now()}` };
           
           inventory.push(newMedicine);
           
@@ -129,53 +128,18 @@ export function AddMedicineClient() {
 
           toast({
               title: "Medicine Added!",
-              description: `${medName} has been successfully added to your inventory.`,
+              description: `${name} has been successfully added to your inventory.`,
           });
           handleClear();
       });
   }
   
-  const handleManualBarcodeCheck = () => {
-    if(!barcode) {
-        toast({variant: "destructive", title: "QR Code Required", description: "Please enter a QR code value."});
-        return;
-    }
-     const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
-    const foundItem = inventory.find((item: any) => item.barcode === barcode);
-
-    if (foundItem) {
-        toast({
-            title: "Medicine Found!",
-            description: `${foundItem.medName} is already in the system.`,
-        });
-        setMedName(foundItem.medName);
-    } else {
-        toast({
-            variant: 'default',
-            title: "New QR Code",
-            description: "Please fill in the rest of the details for this new medicine.",
-        });
-    }
-    setScannedData({barcode});
-    setIsManualEntry(true);
+  const handleManualEntry = () => {
+    setIsFormVisible(true);
+    setSource('manual');
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const html5QrCode = new Html5Qrcode( "reader", false);
-      html5QrCode.scanFile(file, true)
-        .then(decodedText => {
-            handleBarcodeDetection(decodedText);
-        })
-        .catch(err => {
-            toast({variant: "destructive", title: "Scan failed", description: "Could not read QR code from image."});
-        });
-    }
-  };
-
-  const isFormVisible = scannedData || isManualEntry;
-  const isFormValid = medName && batchNo && mfgDate && expiryDate && quantity && supplier && barcode;
+  const isFormValid = name && batchNo && mfgDate && expDate && quantity && supplier && qrCode;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -187,28 +151,17 @@ export function AddMedicineClient() {
               Scan QR Code
             </CardTitle>
             <CardDescription>
-              Place a medicine's QR code in the viewfinder, or upload/enter it manually.
+              Place a medicine's QR code in the viewfinder, or enter it manually.
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
             <div id="reader" className="w-full"></div>
           </CardContent>
-           <CardFooter className="grid grid-cols-2 gap-2">
-            <Button variant="outline" className="w-full" onClick={() => setIsManualEntry(true)}>
+           <CardFooter className="grid grid-cols-1 gap-2">
+            <Button variant="outline" className="w-full" onClick={handleManualEntry}>
                 <Keyboard className="mr-2 h-4 w-4" />
-                Enter QR Code Manually
+                Enter Details Manually
             </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload QR Code
-            </Button>
-            <Input 
-              type="file" 
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/*"
-            />
            </CardFooter>
         </Card>
       )}
@@ -222,23 +175,28 @@ export function AddMedicineClient() {
                     Medicine Details
                 </CardTitle>
                 <CardDescription>
-                    Fill in the details for the new medicine below.
+                    {isFetching ? 'Fetching details...' : 'Fill in the details for the new medicine below.'}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                {isFetching ? (
+                    <div className="flex justify-center items-center h-48">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                ) : (
+                <>
                 <div className="space-y-1">
                     <Label htmlFor="barcode">QR Code</Label>
-                    <div className="flex gap-2">
-                        <Input id="barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} readOnly={!!scannedData && !isManualEntry} />
-                        {isManualEntry && !scannedData && (
-                            <Button onClick={handleManualBarcodeCheck}>Check</Button>
-                        )}
+                     <div className="flex items-center gap-2">
+                        <Input id="barcode" value={qrCode} onChange={(e) => setQrCode(e.target.value)} disabled={source !== 'manual'} />
+                        {source === 'firestore' && <Database className="h-5 w-5 text-green-500" title="From your database"/>}
+                        {source === 'public_api' && <Cloud className="h-5 w-5 text-blue-500" title="From public source"/>}
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <Label htmlFor="med-name">Medicine Name</Label>
-                        <Input id="med-name" value={medName} onChange={(e) => setMedName(e.target.value)} placeholder="e.g., Tylenol 500mg" />
+                        <Input id="med-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Tylenol 500mg" />
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="batch-no">Batch No.</Label>
@@ -252,7 +210,7 @@ export function AddMedicineClient() {
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="expiry-date">Expiry Date</Label>
-                        <Input id="expiry-date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                        <Input id="expiry-date" type="date" value={expDate} onChange={(e) => setExpDate(e.target.value)} />
                     </div>
                 </div>
                  <div className="grid grid-cols-2 gap-4">
@@ -265,12 +223,14 @@ export function AddMedicineClient() {
                         <Input id="supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g., MedDistributors Inc." />
                     </div>
                 </div>
+                </>
+                )}
             </CardContent>
              <CardFooter className="grid grid-cols-2 gap-2">
-                <Button onClick={handleSaveMedicine} disabled={isSaving || !isFormValid} className="w-full">
+                <Button onClick={handleSaveMedicine} disabled={isSaving || isFetching || !isFormValid} className="w-full">
                     {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add to Inventory</>}
                 </Button>
-                <Button onClick={handleClear} variant="outline">
+                <Button onClick={handleClear} variant="outline" disabled={isFetching}>
                     <XCircle className="mr-2 h-4 w-4" />
                     Clear & Rescan
                 </Button>
