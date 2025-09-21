@@ -1,7 +1,7 @@
 'use client';
 
-import { MagicLinkForm } from '@/components/magic-link-form';
+import { AuthForm } from '@/components/auth-form';
 
 export default function PharmacistLoginPage() {
-  return <MagicLinkForm userType="pharmacist" />;
+  return <AuthForm userType="pharmacist" />;
 }
