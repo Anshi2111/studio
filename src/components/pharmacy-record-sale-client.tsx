@@ -74,29 +74,29 @@ export function RecordSaleClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-        if(scannerRef.current.getState() === 2) { // SCANNING
-            scannerRef.current.pause(true);
-        }
+       scannerRef.current.pause(true).catch(()=>{});
     }
     handleBarcodeScanned(decodedText);
   }, [handleBarcodeScanned]);
 
 
   useEffect(() => {
-    if (mode === 'scanning' && !scannedMedicine && !scannerRef.current && document.getElementById('sale-reader')) {
-      const qrScanner = new Html5QrcodeScanner(
-        'sale-reader',
-        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
-        false
-      );
-      qrScanner.render(onScanSuccess, undefined);
-      scannerRef.current = qrScanner;
+    if (mode === 'scanning' && !scannedMedicine && document.getElementById('sale-reader')) {
+      if (!scannerRef.current) {
+        const qrScanner = new Html5QrcodeScanner(
+            'sale-reader',
+            { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+            false
+        );
+        qrScanner.render(onScanSuccess, undefined);
+        scannerRef.current = qrScanner;
+      }
     }
 
     return () => {
       if (scannerRef.current) {
           scannerRef.current.clear().catch(error => {
-              console.error("Failed to clear sale scanner.", error);
+              // It's okay if this fails.
           });
           scannerRef.current = null;
       }
@@ -168,10 +168,6 @@ export function RecordSaleClient() {
     setErrorInfo(null); 
     setScannedMedicine(null); 
     resetForm(); 
-    if(scannerRef.current){
-      scannerRef.current.clear().catch(e => console.error(e));
-      scannerRef.current = null;
-    }
   }
 
   const showScanner = mode === 'scanning' && !scannedMedicine && !isFetching;
@@ -233,7 +229,7 @@ export function RecordSaleClient() {
             {scannedMedicine || errorInfo ? (
                  <Button onClick={handleNewSale} className="w-full" variant="outline" disabled={isFetching}>
                     <ScanLine className="mr-2 h-4 w-4" />
-                    New Sale
+                    Start New Sale
                 </Button>
             ) : (
                 <Button variant="secondary" className="w-full" onClick={handleToggleManual} disabled={isFetching}>

@@ -47,10 +47,9 @@ export function QRCodeScannerClient() {
 
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
-        const state = scannerRef.current.getState();
-        if(state === 2) { // 2 === SCANNING
-          scannerRef.current.pause(true);
-        }
+        // Checking state is not super reliable, so we just try to pause.
+        // It's okay if this fails.
+        scannerRef.current.pause(true).catch(()=>{});
       }
       handleAnalysis(decodedText);
   }, [handleAnalysis]);
@@ -77,9 +76,17 @@ export function QRCodeScannerClient() {
 
     return () => {
        if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner.", error);
-        });
+        try {
+            // getState() can throw if scanner is in a weird state.
+            if (scannerRef.current.getState() !== 1) { // 1 = NOT_STARTED
+                scannerRef.current.clear();
+            }
+        } catch(e) {
+            // If getState() fails, we still want to try to clear.
+             scannerRef.current.clear().catch(error => {
+                console.error("Failed to clear html5QrcodeScanner on unmount.", error);
+             });
+        }
         scannerRef.current = null;
       }
     };
@@ -90,7 +97,7 @@ export function QRCodeScannerClient() {
     if (!file) return;
 
     if (scannerRef.current) {
-      scannerRef.current.pause(true);
+      scannerRef.current.pause(true).catch(()=>{});
     }
     
     const placeholderId = "reader-placeholder";
@@ -121,7 +128,7 @@ export function QRCodeScannerClient() {
     setResult(null);
     setErrorInfo(null);
     if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 = SCANNING
-        scannerRef.current.resume();
+        scannerRef.current.resume().catch(()=>{});
     }
   }
 

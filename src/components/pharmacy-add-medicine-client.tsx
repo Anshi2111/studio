@@ -69,29 +69,30 @@ export function AddMedicineClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-        const state = scannerRef.current.getState();
-        if(state === 2) { // 2 === SCANNING
-          scannerRef.current.pause(true);
-        }
+       scannerRef.current.pause(true).catch(()=>{});
     }
     handleBarcodeDetection(decodedText);
   }, [handleBarcodeDetection]);
 
   useEffect(() => {
-    if (mode === 'scanning' && !showForm && !scannerRef.current && document.getElementById('reader')) {
+    if (mode === 'scanning' && !showForm && document.getElementById('reader')) {
       const qrScanner = new Html5QrcodeScanner(
         'reader',
         { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
         false
       );
-      qrScanner.render(onScanSuccess, undefined);
-      scannerRef.current = qrScanner;
+      if (!scannerRef.current) {
+        qrScanner.render(onScanSuccess, undefined);
+        scannerRef.current = qrScanner;
+      }
     }
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
-        scannerRef.current = null;
+         scannerRef.current.clear().catch(err => {
+            // It's okay if this fails, e.g. if the component was already unmounted.
+         });
+         scannerRef.current = null;
       }
     };
   }, [mode, onScanSuccess, showForm]);
@@ -113,6 +114,9 @@ export function AddMedicineClient() {
     resetForm();
     setShowForm(false);
     setMode('scanning');
+    if (scannerRef.current) {
+      scannerRef.current.resume().catch(()=>{});
+    }
   };
 
   const handleSaveMedicine = () => {
@@ -259,6 +263,7 @@ export function AddMedicineClient() {
         </CardContent>
         <CardFooter className="grid grid-cols-1 gap-2">
         <Button variant="outline" className="w-full" onClick={() => {
+            setShowForm(false);
             setMode(mode === 'scanning' ? 'manual' : 'scanning');
             resetForm();
             }}>
