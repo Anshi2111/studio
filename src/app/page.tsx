@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import { ArrowRight, BarChart, HeartPulse, ShieldCheck, Stethoscope, Pill, LogIn } from 'lucide-react';
+import { Suspense } from 'react';
+
+function Copyright() {
+  return <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
+}
 
 export default function Home() {
   return (
@@ -146,7 +151,9 @@ export default function Home() {
                 </div>
                 <div>
                     <h3 className="font-bold text-lg mb-2">Healthure</h3>
-                    <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
+                    <Suspense>
+                      <Copyright />
+                    </Suspense>
                 </div>
             </div>
         </div>
