@@ -167,7 +167,7 @@ export function MedicalHistoryClient() {
                                             <div className="grid gap-4">
                                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                                     <div><strong className="block text-foreground">Medicine</strong> {entry.medicineName} ({entry.strength})</div>
-                                                    <div><strong className="block text-foreground">Dosage</strong> {entry.tabletsPerDay} {entry.medicineType.toLowerCase()}(s) for {entry.courseDurationDays} days</div>
+                                                    <div><strong className="block text-foreground">Dosage</strong> {entry.tabletsPerDay} {(entry.medicineType || '').toLowerCase()}(s) for {entry.courseDurationDays} days</div>
                                                     <div><strong className="block text-foreground">Symptoms</strong> {entry.symptoms || 'N/A'}</div>
                                                     <div><strong className="block text-foreground">Clinic/Hospital</strong> {entry.hospitalName || 'N/A'}</div>
                                                     {entry.followUpDate && <div><strong className="block text-foreground">Follow-up</strong> {format(new Date(entry.followUpDate), 'PPP')}</div>}
