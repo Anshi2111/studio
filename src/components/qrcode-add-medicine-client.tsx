@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Search } from 'lucide-react';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import Link from 'next/link';
 
 interface QRCodeAddMedicineClientProps {
@@ -20,6 +20,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [hasScanned, setHasScanned] = useState(false);
+  const readerId = 'add-med-reader';
 
   const handleAnalysis = useCallback((qrCode: string) => {
     setErrorInfo(null);
@@ -41,15 +42,52 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
     });
   }, [toast, onScan]);
 
-  const onScanSuccess = useCallback((decodedText: string) => {
-      if (scannerRef.current) {
+  useEffect(() => {
+    if (document.getElementById(readerId)) {
+        const config: Html5QrcodeCameraScanConfig = {
+            qrbox: {
+              width: 250,
+              height: 250,
+            },
+            fps: 5,
+            rememberLastUsedCamera: true,
+          };
+        
+        const scanner = new Html5QrcodeScanner(
+          readerId,
+          config,
+          false // verbose
+        );
+
+        const onScanSuccess = (decodedText: string) => {
+            if (scanner.getState() === 2) { // SCANNING
+              try {
+                  scanner.pause(true);
+              } catch(e) {
+                  console.error("Failed to pause scanner", e);
+              }
+            }
+            handleAnalysis(decodedText);
+        }
+        
+        scanner.render(onScanSuccess, undefined);
+        scannerRef.current = scanner;
+    }
+
+    return () => {
+       if (scannerRef.current) {
         try {
-            scannerRef.current.pause(true);
+            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+            }
+            scannerRef.current.clear();
         } catch(e) {
-            console.error("Failed to pause scanner", e);
+             console.error("Failed to clear html5QrcodeScanner on unmount.", e);
+        } finally {
+            scannerRef.current = null;
         }
       }
-      handleAnalysis(decodedText);
+    };
   }, [handleAnalysis]);
 
   const handleRescan = () => {
@@ -64,39 +102,6 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
     }
   }
 
-  useEffect(() => {
-    // Do not render the scanner if it's already been cleared or exists.
-    if (document.getElementById('add-med-reader')?.innerHTML !== "" || scannerRef.current) return;
-
-    const scanner = new Html5QrcodeScanner(
-      'add-med-reader',
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-        rememberLastUsedCamera: true,
-      },
-      false // verbose
-    );
-    
-    scanner.render(onScanSuccess, undefined);
-    scannerRef.current = scanner;
-
-    return () => {
-       if (scannerRef.current) {
-        try {
-            scannerRef.current.clear();
-        } catch(e) {
-             console.error("Failed to clear html5QrcodeScanner on unmount.", e);
-        } finally {
-            scannerRef.current = null;
-        }
-      }
-    };
-  }, [onScanSuccess]);
-
 
   return (
     <Card className="shadow-lg mt-4">
@@ -110,7 +115,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="add-med-reader" className={hasScanned ? 'hidden' : ''}></div>
+            <div id={readerId} className={hasScanned ? 'hidden' : ''}></div>
 
             {isPending && (
               <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">

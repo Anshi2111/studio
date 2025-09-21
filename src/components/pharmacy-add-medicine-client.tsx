@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud, Search, ScanLine } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import Link from 'next/link';
 
@@ -33,6 +33,7 @@ export function AddMedicineClient() {
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const readerId = 'add-medicine-reader';
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
     setQrCode(decodedText);
@@ -67,36 +68,48 @@ export function AddMedicineClient() {
     });
   }, [toast]);
   
-  const onScanSuccess = useCallback((decodedText: string) => {
-    if (scannerRef.current) {
-       try {
-        scannerRef.current.pause(true);
-       } catch(e){}
-    }
-    handleBarcodeDetection(decodedText);
-  }, [handleBarcodeDetection]);
-
   useEffect(() => {
-    if (mode === 'scanning' && !showForm) {
+    if (mode === 'scanning' && !showForm && document.getElementById(readerId)) {
+      const config: Html5QrcodeCameraScanConfig = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 }, 
+        rememberLastUsedCamera: true 
+      };
+
       const scanner = new Html5QrcodeScanner(
-        'reader',
-        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+        readerId,
+        config,
         false
       );
+
+      const onScanSuccess = (decodedText: string) => {
+        if (scanner.getState() === 2) { // SCANNING
+          try {
+            scanner.pause(true);
+          } catch(e) {}
+        }
+        handleBarcodeDetection(decodedText);
+      }
+
       scanner.render(onScanSuccess, undefined);
       scannerRef.current = scanner;
     }
 
     return () => {
       if (scannerRef.current) {
-         try {
-           scannerRef.current.clear();
-         } catch (err) {
-            console.error("Failed to clear scanner on unmount:", err)
-         }
+        try {
+          if (scannerRef.current.getState() === 2) { // SCANNING
+            scannerRef.current.pause(true);
+          }
+          scannerRef.current.clear();
+        } catch (err) {
+           console.error("Failed to clear scanner on unmount:", err)
+        } finally {
+            scannerRef.current = null;
+        }
       }
     };
-  }, [mode, onScanSuccess, showForm]);
+  }, [mode, showForm, handleBarcodeDetection]);
   
 
   const resetForm = () => {
@@ -115,11 +128,6 @@ export function AddMedicineClient() {
     resetForm();
     setShowForm(false);
     setMode('scanning');
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.resume();
-      } catch (e){}
-    }
   };
 
   const handleSaveMedicine = () => {
@@ -255,7 +263,7 @@ export function AddMedicineClient() {
         </CardHeader>
         <CardContent className="relative">
             {mode === 'scanning' ? (
-                <div id="reader" className="w-full"></div>
+                <div id={readerId} className="w-full"></div>
             ) : (
                 <div className="space-y-4">
                     <Label htmlFor="manual-barcode">QR Code Value</Label>

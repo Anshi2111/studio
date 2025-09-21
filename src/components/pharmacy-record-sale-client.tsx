@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Search } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
 import Link from 'next/link';
@@ -27,6 +27,7 @@ export function RecordSaleClient() {
   const [mode, setMode] = useState<'scanning' | 'manual'>('scanning');
   const [manualBarcode, setManualBarcode] = useState('');
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const readerId = 'sale-reader';
 
 
   // Form state
@@ -45,13 +46,18 @@ export function RecordSaleClient() {
     setErrorInfo(null);
     setScannedMedicine(null);
     resetForm();
+
     if(scannerRef.current) {
         try {
+            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+            }
             scannerRef.current.clear();
         } catch(e) {
             console.error(e);
+        } finally {
+            scannerRef.current = null;
         }
-        scannerRef.current = null;
     }
 
     startFetchTransition(async () => {
@@ -76,23 +82,28 @@ export function RecordSaleClient() {
     });
   }, [toast]);
   
-  const onScanSuccess = useCallback((decodedText: string) => {
-    if (scannerRef.current) {
-       try {
-        scannerRef.current.pause(true);
-       } catch(e){}
-    }
-    handleBarcodeScanned(decodedText);
-  }, [handleBarcodeScanned]);
-
-
   useEffect(() => {
-    if (mode === 'scanning' && !scannedMedicine && !scannerRef.current) {
+    if (mode === 'scanning' && !scannedMedicine && document.getElementById(readerId)) {
+        const config: Html5QrcodeCameraScanConfig = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 }, 
+            rememberLastUsedCamera: true 
+        };
         const scanner = new Html5QrcodeScanner(
-            'sale-reader',
-            { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+            readerId,
+            config,
             false
         );
+
+        const onScanSuccess = (decodedText: string) => {
+            if (scanner.getState() === 2) { // 2 === SCANNING
+                try {
+                    scanner.pause(true);
+                } catch(e) {}
+            }
+            handleBarcodeScanned(decodedText);
+        }
+
         scanner.render(onScanSuccess, undefined);
         scannerRef.current = scanner;
     }
@@ -100,6 +111,9 @@ export function RecordSaleClient() {
     return () => {
       if (scannerRef.current) {
           try {
+              if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+              }
               scannerRef.current.clear();
           } catch (error) {
               console.error("Failed to clear scanner on unmount:", error);
@@ -108,7 +122,7 @@ export function RecordSaleClient() {
           }
       }
     };
-  }, [mode, scannedMedicine, onScanSuccess]);
+  }, [mode, scannedMedicine, handleBarcodeScanned]);
 
 
   const handleNewSale = () => {
@@ -199,7 +213,7 @@ export function RecordSaleClient() {
         </CardHeader>
         <CardContent className="relative">
             {showScanner && (
-              <div id="sale-reader" className="w-full"></div>
+              <div id={readerId} className="w-full"></div>
             )}
             
             {isFetching && (

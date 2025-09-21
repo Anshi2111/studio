@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Upload, Database, Cloud, Search } from 'lucide-react';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
-import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import { Input } from './ui/input';
 import Link from 'next/link';
 
@@ -20,6 +20,7 @@ export function QRCodeScannerClient() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const readerId = 'qr-code-reader';
 
 
   const handleAnalysis = useCallback((qrCode: string) => {
@@ -47,22 +48,24 @@ export function QRCodeScannerClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (document.getElementById('reader')?.innerHTML !== "" || scannerRef.current) return;
+    if (!document.getElementById(readerId)) return;
 
-    const qrScanner = new Html5QrcodeScanner(
-      'reader',
-      {
+    const config: Html5QrcodeCameraScanConfig = {
         qrbox: {
           width: 250,
           height: 250,
         },
         fps: 5,
         rememberLastUsedCamera: true,
-      },
+      };
+
+    const qrScanner = new Html5QrcodeScanner(
+      readerId,
+      config,
       /* verbose= */ false
     );
     
-    function onScanSuccess(decodedText: string) {
+    const onScanSuccess = (decodedText: string) => {
       if (qrScanner.getState() === 2) { // 2 === SCANNING
         qrScanner.pause(true);
         handleAnalysis(decodedText);
@@ -73,12 +76,18 @@ export function QRCodeScannerClient() {
     scannerRef.current = qrScanner;
 
     return () => {
-       if (scannerRef.current) { 
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner.", error);
-        });
-        scannerRef.current = null;
-      }
+        if (scannerRef.current) {
+            try {
+                if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                    scannerRef.current.pause(true);
+                }
+                scannerRef.current.clear();
+            } catch (error) {
+                console.error("Failed to clear html5QrcodeScanner on unmount.", error);
+            } finally {
+                 scannerRef.current = null;
+            }
+        }
     };
   }, [handleAnalysis]);
 
@@ -86,39 +95,46 @@ export function QRCodeScannerClient() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    Html5Qrcode.getCameras().then(() => {
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.scanFile(file, true)
-            .then(decodedText => {
-                if(scannerRef.current && scannerRef.current.getState() === 2) {
-                  scannerRef.current.pause(true);
-                }
-                handleAnalysis(decodedText);
-            })
-            .catch(err => {
-                toast({
-                    variant: "destructive",
-                    title: "Scan Failed",
-                    description: "Could not decode QR code from the uploaded image.",
-                });
+    const tempReaderId = "temp-file-reader";
+    const readerElement = document.createElement('div');
+    readerElement.id = tempReaderId;
+    readerElement.style.display = 'none';
+    document.body.appendChild(readerElement);
+
+    const html5QrCode = new Html5Qrcode(tempReaderId, false);
+    html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+            if(scannerRef.current && scannerRef.current.getState() === 2) { // 2 === SCANNING
+              scannerRef.current.pause(true);
+            }
+            handleAnalysis(decodedText);
+        })
+        .catch(err => {
+            toast({
+                variant: "destructive",
+                title: "Scan Failed",
+                description: "Could not decode QR code from the uploaded image.",
             });
-    }).catch(err => {
-        console.error("Cannot get camera permissions for file scan", err);
-         toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not initialize scanner to read the file.",
+        })
+        .finally(() => {
+            document.body.removeChild(readerElement);
         });
-    });
   };
 
   const handleRescan = () => {
     setResult(null);
     setErrorInfo(null);
     if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
-        scannerRef.current.resume();
+        try {
+            scannerRef.current.resume();
+        } catch (e) {
+            console.error("Failed to resume scanner", e);
+        }
     }
   }
+  
+  const showScanner = !isPending && !result && !errorInfo;
+
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -133,7 +149,7 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="reader" className="w-full"></div>
+            <div id={readerId} className={showScanner ? 'w-full' : 'hidden'}></div>
              {errorInfo && (
                 <Alert variant="destructive" className="mt-4">
                   <AlertTitle>Scan Failed</AlertTitle>
@@ -149,22 +165,27 @@ export function QRCodeScannerClient() {
                 </Alert>
               )}
         </CardContent>
-         <CardFooter className="grid grid-cols-2 gap-2">
-            <Button onClick={handleRescan} disabled={isPending || (!result && !errorInfo)}>
-                <ScanLine className="mr-2 h-4 w-4" />
-                Scan Again
-            </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload QR Code
-            </Button>
-            <Input 
-              type="file" 
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/*"
-            />
+         <CardFooter className="grid grid-cols-1 gap-2">
+            {!showScanner ? (
+                <Button onClick={handleRescan} disabled={isPending}>
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    Scan Again
+                </Button>
+            ) : (
+                <>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload QR Code
+                </Button>
+                <Input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+                />
+                </>
+            )}
         </CardFooter>
       </Card>
 
