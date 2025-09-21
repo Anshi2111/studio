@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { mockUserMedications } from '@/lib/mock-data';
@@ -12,6 +12,7 @@ import { PlusCircle, Bot, Loader2, Save, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { useToast } from "@/hooks/use-toast";
+import { QRCodeScannerCabinetClient } from './qrcode-scanner-cabinet-client';
 
 const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
@@ -23,20 +24,30 @@ function getExpiryBadge(expiryDate: string): React.ReactNode {
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normalize today's date
-    const expiry = new Date(expiryDate);
-    const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
+    try {
+        const expiry = new Date(expiryDate);
+         if (isNaN(expiry.getTime())) {
+            return <Badge variant="outline">Invalid Date</Badge>;
+        }
+        const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 3600 * 24));
 
-    if (daysUntilExpiry < 0) {
-        return <Badge variant="destructive">Expired</Badge>;
+        if (daysUntilExpiry < 0) {
+            return <Badge variant="destructive">Expired</Badge>;
+        }
+        if (daysUntilExpiry <= 30) {
+            return <Badge variant="destructive" className="bg-yellow-500/80 text-white hover:bg-yellow-500/90">Expires in {daysUntilExpiry} days</Badge>;
+        }
+        return <Badge variant="secondary">{format(expiry, "PPP")}</Badge>;
+    } catch (e) {
+        return <Badge variant="outline">Invalid Date</Badge>;
     }
-    if (daysUntilExpiry <= 30) {
-        return <Badge variant="destructive" className="bg-yellow-500/80 text-white hover:bg-yellow-500/90">Expires in {daysUntilExpiry} days</Badge>;
-    }
-    return <Badge variant="secondary">{format(expiry, "PPP")}</Badge>;
 }
 
+interface MedicineCabinetClientProps {
+    showFormOnly?: boolean;
+}
 
-export function MedicineCabinetClient() {
+export function MedicineCabinetClient({ showFormOnly = false }: MedicineCabinetClientProps) {
   const [userMedications, setUserMedications] = useState<UserMedication[]>([]);
   const [newMedName, setNewMedName] = useState('');
   const [newMedPurchaseDate, setNewMedPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
@@ -55,8 +66,13 @@ export function MedicineCabinetClient() {
   }, []);
 
   const updateMedications = (meds: UserMedication[]) => {
-    const sortedMeds = meds.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+    const sortedMeds = meds.sort((a, b) => {
+        const dateA = a.expiryDate ? new Date(a.expiryDate).getTime() : Infinity;
+        const dateB = b.expiryDate ? new Date(b.expiryDate).getTime() : Infinity;
+        return dateA - dateB;
+    });
     setUserMedications(sortedMeds);
+    localStorage.setItem(MED_CABINET_STORAGE_KEY, JSON.stringify(sortedMeds));
   };
   
   const handleSaveChanges = () => {
@@ -112,8 +128,58 @@ export function MedicineCabinetClient() {
     });
   }
 
+  const handleQRScan = useCallback((data: {name: string, expDate: string}) => {
+    setNewMedName(data.name);
+    setNewMedExpiry(data.expDate);
+    toast({
+        title: "Medicine Details Filled",
+        description: `Details for ${data.name} have been pre-filled from the QR code.`,
+    });
+    // Consider switching tabs here if you have a tabbed layout
+  }, [toast]);
+
+  const addMedicineForm = (
+    <div className="space-y-4 rounded-lg border p-4 bg-background">
+        <h3 className="font-semibold text-lg">Add a New Medicine</h3>
+        <div className="space-y-2">
+            <Label htmlFor="med-name">Medicine Name</Label>
+            <Input id="med-name" placeholder="e.g., Tylenol, Vitamin C" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
+        </div>
+         <div className="space-y-2">
+            <Label htmlFor="med-purchase-date">Purchase Date</Label>
+            <Input id="med-purchase-date" type="date" value={newMedPurchaseDate} onChange={e => setNewMedPurchaseDate(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="user-email">Your Email</Label>
+            <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input id="user-email" type="email" placeholder="you@example.com (for AI lookup)" value={userEmail} onChange={e => setUserEmail(e.target.value)} className="pl-10"/>
+            </div>
+        </div>
+        <div className="space-y-2">
+            <Label htmlFor="med-expiry">Expiry Date</Label>
+            <div className="flex gap-2">
+                <Input id="med-expiry" type="date" value={newMedExpiry} onChange={e => setNewMedExpiry(e.target.value)} placeholder="YYYY-MM-DD" />
+                <Button variant="outline" onClick={handleFindExpiry} disabled={isPending}>
+                    {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Bot className="h-4 w-4"/>}
+                    <span className="ml-2 hidden sm:inline">Find with AI</span>
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Enter manually, scan a QR code, or use AI to find it from past purchases.</p>
+        </div>
+        <Button onClick={handleAddMedication} className="w-full" disabled={!newMedName || !newMedPurchaseDate}>
+            <PlusCircle className="mr-2 h-4 w-4"/>
+            Add to Cabinet
+        </Button>
+    </div>
+  );
+
+  if (showFormOnly) {
+      return <QRCodeScannerCabinetClient onScan={handleQRScan} />;
+  }
+
   return (
-    <Card className="shadow-lg transition-all hover:shadow-xl">
+    <Card className="shadow-lg transition-all hover:shadow-xl mt-6">
         <CardContent className="p-6">
             <div className="grid gap-6 md:grid-cols-2">
                 <div>
@@ -124,12 +190,12 @@ export function MedicineCabinetClient() {
                             Save Cabinet
                         </Button>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                         {userMedications.map(med => (
                             <div key={med.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
                                 <div>
                                     <span className="font-medium">{med.name}</span>
-                                    <p className="text-xs text-muted-foreground">Purchased: {format(new Date(med.purchaseDate), "PPP")}</p>
+                                    <p className="text-xs text-muted-foreground">Purchased: {med.purchaseDate ? format(new Date(med.purchaseDate), "PPP") : 'N/A'}</p>
                                 </div>
                                 {getExpiryBadge(med.expiryDate)}
                             </div>
@@ -137,39 +203,7 @@ export function MedicineCabinetClient() {
                         {userMedications.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">You haven't added any medications yet.</p>}
                     </div>
                 </div>
-                <div className="space-y-4 rounded-lg border p-4 bg-background">
-                    <h3 className="font-semibold text-lg">Add a New Medicine</h3>
-                    <div className="space-y-2">
-                        <Label htmlFor="med-name">Medicine Name</Label>
-                        <Input id="med-name" placeholder="e.g., Tylenol, Vitamin C" value={newMedName} onChange={e => setNewMedName(e.target.value)} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="med-purchase-date">Purchase Date</Label>
-                        <Input id="med-purchase-date" type="date" value={newMedPurchaseDate} onChange={e => setNewMedPurchaseDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="user-email">Your Email</Label>
-                        <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="user-email" type="email" placeholder="you@example.com" value={userEmail} onChange={e => setUserEmail(e.target.value)} className="pl-10"/>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="med-expiry">Expiry Date</Label>
-                        <div className="flex gap-2">
-                            <Input id="med-expiry" type="date" value={newMedExpiry} onChange={e => setNewMedExpiry(e.target.value)} placeholder="YYYY-MM-DD" />
-                            <Button variant="outline" onClick={handleFindExpiry} disabled={isPending}>
-                                {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Bot className="h-4 w-4"/>}
-                                <span className="ml-2 hidden sm:inline">Find with AI</span>
-                            </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Enter manually or let our AI find it for you.</p>
-                    </div>
-                    <Button onClick={handleAddMedication} className="w-full" disabled={!newMedName || !newMedPurchaseDate}>
-                        <PlusCircle className="mr-2 h-4 w-4"/>
-                        Add to Cabinet
-                    </Button>
-                </div>
+                {addMedicineForm}
             </div>
         </CardContent>
     </Card>
