@@ -10,7 +10,7 @@ export default function RecordSalePage() {
         </h1>
       </div>
        <p className="text-muted-foreground mb-6">
-        Scan a medicine, enter the buyer’s phone number, and record the quantity sold to link the purchase to a patient account.
+        Scan a medicine's QR code, enter the buyer’s phone number, and record the quantity sold to link the purchase to a patient account.
       </p>
       <RecordSaleClient />
     </div>

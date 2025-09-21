@@ -4,10 +4,10 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, QrCode } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
@@ -88,7 +88,7 @@ export function AddMedicineClient() {
         toast({
             variant: 'default',
             title: "New Medicine Detected",
-            description: "This barcode isn't in your system. Please add its details manually.",
+            description: "This QR code isn't in your system. Please add its details manually.",
         });
     }
   }
@@ -134,7 +134,7 @@ export function AddMedicineClient() {
   
   const handleManualBarcodeCheck = () => {
     if(!barcode) {
-        toast({variant: "destructive", title: "Barcode Required", description: "Please enter a barcode number."});
+        toast({variant: "destructive", title: "QR Code Required", description: "Please enter a QR code value."});
         return;
     }
      const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
@@ -149,7 +149,7 @@ export function AddMedicineClient() {
     } else {
         toast({
             variant: 'default',
-            title: "New Barcode",
+            title: "New QR Code",
             description: "Please fill in the rest of the details for this new medicine.",
         });
     }
@@ -167,10 +167,10 @@ export function AddMedicineClient() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-headline">
               <Camera className="h-6 w-6" />
-              Scan Barcode
+              Scan QR Code
             </CardTitle>
             <CardDescription>
-              Place a medicine's barcode in the viewfinder to scan it, or enter it manually.
+              Place a medicine's QR code in the viewfinder to scan it, or enter it manually.
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
@@ -179,7 +179,7 @@ export function AddMedicineClient() {
            <CardFooter>
             <Button variant="outline" className="w-full" onClick={() => setIsManualEntry(true)}>
                 <Keyboard className="mr-2 h-4 w-4" />
-                Enter Barcode Manually
+                Enter QR Code Manually
             </Button>
            </CardFooter>
         </Card>
@@ -199,7 +199,7 @@ export function AddMedicineClient() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-1">
-                    <Label htmlFor="barcode">Barcode</Label>
+                    <Label htmlFor="barcode">QR Code</Label>
                     <div className="flex gap-2">
                         <Input id="barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} readOnly={!!scannedData && !isManualEntry} />
                         {isManualEntry && !scannedData && (

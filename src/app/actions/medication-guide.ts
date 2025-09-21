@@ -2,8 +2,8 @@
 
 import { getMedicationInteractions } from '@/ai/flows/medication-interaction-guide';
 import type { MedicationInteractionInput, MedicationInteractionOutput } from '@/ai/flows/medication-interaction-guide';
-import { getMedicationInfoFromBarcode } from '@/ai/flows/barcode-medication-info';
-import type { BarcodeMedicationInfoInput, BarcodeMedicationInfoOutput } from '@/ai/flows/barcode-medication-info';
+import { getMedicationInfoFromQRCode } from '@/ai/flows/qrcode-medication-info';
+import type { QRCodeMedicationInfoInput, QRCodeMedicationInfoOutput } from '@/ai/flows/qrcode-medication-info';
 import { getMedicationExpiry } from '@/ai/flows/get-medication-expiry-date';
 import type { MedicationExpiryInput, MedicationExpiryOutput } from '@/ai/flows/get-medication-expiry-date';
 
@@ -22,17 +22,17 @@ export async function checkMedicationInteractions(input: MedicationInteractionIn
   }
 }
 
-export async function getBarcodeInfo(input: BarcodeMedicationInfoInput): Promise<{
+export async function getQRCodeInfo(input: QRCodeMedicationInfoInput): Promise<{
   success: boolean;
-  data?: BarcodeMedicationInfoOutput;
+  data?: QRCodeMedicationInfoOutput;
   error?: string;
 }> {
   try {
-    const result = await getMedicationInfoFromBarcode(input);
+    const result = await getMedicationInfoFromQRCode(input);
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error in barcode medication info flow:', error);
-    return { success: false, error: 'Failed to get medication info from barcode. Please try again.' };
+    console.error('Error in QR code medication info flow:', error);
+    return { success: false, error: 'Failed to get medication info from QR code. Please try again.' };
   }
 }
 

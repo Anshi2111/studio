@@ -5,18 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Volume2, Play, VideoOff, Video } from 'lucide-react';
-import type { BarcodeMedicationInfoOutput } from '@/ai/flows/barcode-medication-info';
-import { getBarcodeInfo } from '@/app/actions/medication-guide';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Loader2, Camera, ScanLine, Info, Volume2, QrCode } from 'lucide-react';
+import type { QRCodeMedicationInfoOutput } from '@/ai/flows/qrcode-medication-info';
+import { getQRCodeInfo } from '@/app/actions/medication-guide';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export function BarcodeScannerClient() {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<BarcodeMedicationInfoOutput | null>(null);
+  const [result, setResult] = useState<QRCodeMedicationInfoOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   
   useEffect(() => {
@@ -32,12 +32,11 @@ export function BarcodeScannerClient() {
       },
       /* verbose= */ false
     );
-    scannerRef.current = scanner.html5Qrcode;
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
         setIsScanning(false);
         scanner.pause();
-        handleBarcodeScanned(decodedText);
+        handleCodeScanned(decodedText);
     }
 
     function onScanFailure(error: any) {
@@ -45,24 +44,25 @@ export function BarcodeScannerClient() {
     }
 
     scanner.render(onScanSuccess, onScanFailure);
+    scannerRef.current = scanner;
     setIsScanning(scanner.isScanning);
 
     return () => {
-      scanner.clear().catch(error => {
-        console.error("Failed to clear html5QrcodeScanner.", error);
-      });
+      if (scanner.getState() === 2) { // SCANNING
+        scanner.clear().catch(error => {
+          console.error("Failed to clear html5QrcodeScanner.", error);
+        });
+      }
     };
   }, []);
 
-  const handleBarcodeScanned = (barcode: string) => {
-    // We still need to send an "image" to the backend as the AI flow expects it.
-    // We'll create a simple canvas image containing the barcode text.
+  const handleCodeScanned = (scannedCode: string) => {
     const canvas = document.createElement('canvas');
     canvas.width = 400;
     canvas.height = 100;
     const context = canvas.getContext('2d');
     if (!context) {
-      setError('Could not create canvas for barcode.');
+      setError('Could not create canvas for QR code.');
       return;
     }
     context.fillStyle = 'white';
@@ -70,22 +70,22 @@ export function BarcodeScannerClient() {
     context.fillStyle = 'black';
     context.font = '20px monospace';
     context.textAlign = 'center';
-    context.fillText(`Barcode: ${barcode}`, canvas.width / 2, canvas.height / 2);
+    context.fillText(`QR Code: ${scannedCode}`, canvas.width / 2, canvas.height / 2);
     const imageDataUri = canvas.toDataURL('image/png');
 
     setError(null);
     setResult(null);
 
     startTransition(async () => {
-      const response = await getBarcodeInfo({ barcodeImage: imageDataUri });
+      const response = await getQRCodeInfo({ qrCodeImage: imageDataUri });
       if (response.success && response.data) {
         setResult(response.data);
       } else {
-        setError(response.error || 'Failed to get information for this barcode.');
+        setError(response.error || 'Failed to get information for this QR code.');
         toast({
           variant: 'destructive',
           title: 'Analysis Failed',
-          description: 'Could not retrieve information for the scanned barcode.',
+          description: 'Could not retrieve information for the scanned QR code.',
         });
       }
     });
@@ -100,9 +100,19 @@ export function BarcodeScannerClient() {
   const handleRescan = () => {
       setResult(null);
       setError(null);
-      if(scannerRef.current && !isScanning) {
-          scannerRef.current.resume();
+      if(scannerRef.current && !isScanning && scannerRef.current.getState() !== 2) {
+          scannerRef.current.render(
+            (decodedText) => {
+              setIsScanning(false);
+              scannerRef.current?.pause();
+              handleCodeScanned(decodedText);
+            },
+            (error) => { /* fail */ }
+          )
           setIsScanning(true);
+      } else if (scannerRef.current && scannerRef.current.getState() === 3 /* PAUSED */) {
+        scannerRef.current.resume();
+        setIsScanning(true);
       }
   }
 
@@ -112,10 +122,10 @@ export function BarcodeScannerClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-headline">
             <Camera className="h-6 w-6" />
-            Scan Medication Barcode
+            Scan Medication QR Code
           </CardTitle>
           <CardDescription>
-            Point your camera at the barcode on your medication packaging to get instant information.
+            Point your camera at the QR code on your medication packaging to get instant information.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
@@ -173,7 +183,7 @@ export function BarcodeScannerClient() {
                 )}
               </CardTitle>
               <CardDescription>
-                Summary of the medication based on the scanned barcode.
+                Summary of the medication based on the scanned QR code.
               </CardDescription>
             </CardHeader>
             <CardContent>

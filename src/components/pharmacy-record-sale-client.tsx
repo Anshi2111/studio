@@ -93,11 +93,11 @@ export function RecordSaleClient() {
         description: `${foundItem.medName} is ready to be sold.`,
       });
     } else {
-      setError(`Barcode "${barcode}" not found in inventory. Please add the medicine first.`);
+      setError(`QR Code "${barcode}" not found in inventory. Please add the medicine first.`);
       toast({
           variant: "destructive",
           title: "Medicine Not Found",
-          description: "This barcode is not in your inventory system."
+          description: "This QR code is not in your inventory system."
       })
     }
   };
@@ -181,7 +181,7 @@ export function RecordSaleClient() {
             Scan Medicine to Sell
           </CardTitle>
           <CardDescription>
-            Scan the barcode or enter it manually.
+            Scan the QR code or enter it manually.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
@@ -195,8 +195,8 @@ export function RecordSaleClient() {
             )}
             {isManualEntry && (
                 <div className="space-y-4">
-                    <Label htmlFor="manual-barcode">Barcode Number</Label>
-                    <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter barcode..."/>
+                    <Label htmlFor="manual-barcode">QR Code Value</Label>
+                    <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter QR code..."/>
                     <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)}>Find Medicine</Button>
                 </div>
             )}
@@ -228,7 +228,7 @@ export function RecordSaleClient() {
                  <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Info className="h-10 w-10" />
-                        <p className="font-medium">Scan or enter a medicine barcode to begin.</p>
+                        <p className="font-medium">Scan or enter a medicine QR code to begin.</p>
                     </div>
                 </div>
             )}

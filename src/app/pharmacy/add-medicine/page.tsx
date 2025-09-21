@@ -10,7 +10,7 @@ export default function AddMedicinePage() {
                 </h1>
             </div>
             <p className="text-muted-foreground mb-6">
-                Scan a medicine's barcode to quickly add it to your inventory. If the barcode is not found, you can enter the details manually.
+                Scan a medicine's QR code to quickly add it to your inventory. If the QR code is not found, you can enter the details manually.
             </p>
             <AddMedicineClient />
         </div>

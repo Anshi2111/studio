@@ -1,7 +1,7 @@
 import { MedicationGuideClient } from '@/components/medication-guide-client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarcodeScannerClient } from '@/components/barcode-scanner-client';
-import { Text, ScanBarcode } from 'lucide-react';
+import { Text, QrCode } from 'lucide-react';
 
 export default function MedicationGuidePage() {
     return (
@@ -14,8 +14,8 @@ export default function MedicationGuidePage() {
                         Check Interactions
                     </TabsTrigger>
                     <TabsTrigger value="barcode-scanner">
-                        <ScanBarcode className="mr-2 h-4 w-4" />
-                        Scan Barcode
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Scan QR Code
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="text-input">
