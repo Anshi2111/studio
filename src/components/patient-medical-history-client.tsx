@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Save } from 'lucide-react';
+import { PlusCircle, Save, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,12 +41,9 @@ export function MedicalHistoryClient() {
         }
     }, []);
 
-    const handleSaveHistory = () => {
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
-        toast({
-            title: 'History Saved!',
-            description: 'Your medical history has been updated.',
-        });
+    const handleSaveHistory = (updatedHistory: HistoryEntry[]) => {
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+        setHistory(updatedHistory);
     };
 
     const handleAddEntry = () => {
@@ -70,8 +67,13 @@ export function MedicalHistoryClient() {
         };
 
         const updatedHistory = [newEntry, ...history];
-        setHistory(updatedHistory);
+        handleSaveHistory(updatedHistory);
         
+        toast({
+            title: 'History Entry Added!',
+            description: 'Your new medical history entry has been saved.'
+        });
+
         // Reset form
         setMedicineName('');
         setDoctorName('');
@@ -79,6 +81,15 @@ export function MedicalHistoryClient() {
         setTabletsPerDay('');
         setCourseDurationDays('');
         setConditionNotes('');
+    };
+
+    const handleDeleteEntry = (id: string) => {
+        const updatedHistory = history.filter(entry => entry.id !== id);
+        handleSaveHistory(updatedHistory);
+        toast({
+            title: 'Entry Deleted',
+            description: 'The medical history entry has been removed.'
+        });
     };
     
     return (
@@ -91,10 +102,6 @@ export function MedicalHistoryClient() {
                 <div className="md:col-span-2">
                      <div className="flex items-center justify-between mb-4">
                         <h3 className="font-semibold text-lg">Your Timeline</h3>
-                        <Button variant="outline" size="sm" onClick={handleSaveHistory}>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save History
-                        </Button>
                     </div>
                     <div className="space-y-4">
                         {history.length > 0 ? history.map(entry => (
@@ -106,12 +113,19 @@ export function MedicalHistoryClient() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0">
-                                    <p className="text-sm text-muted-foreground">{entry.conditionNotes}</p>
-                                    {(entry.tabletsPerDay > 0 || entry.courseDurationDays > 0) && (
-                                        <p className="text-xs mt-2">
-                                            Dosage: {entry.tabletsPerDay || 'N/A'} tablets/day for {entry.courseDurationDays || 'N/A'} days
-                                        </p>
-                                    )}
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">{entry.conditionNotes}</p>
+                                            {(entry.tabletsPerDay > 0 || entry.courseDurationDays > 0) && (
+                                                <p className="text-xs mt-2">
+                                                    Dosage: {entry.tabletsPerDay || 'N/A'} tablets/day for {entry.courseDurationDays || 'N/A'} days
+                                                </p>
+                                            )}
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteEntry(entry.id)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         )) : (

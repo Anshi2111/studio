@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { Button } from './ui/button';
-import { PlusCircle, Bot, Loader2, Mail, QrCode } from 'lucide-react';
+import { PlusCircle, Bot, Loader2, Mail, QrCode, Trash2 } from 'lucide-react';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
@@ -165,6 +165,27 @@ export function MyMedicinesClient() {
         });
     }, []);
 
+    const handleDeleteMedicine = (id: string, source: string) => {
+        if (source === 'Purchased') {
+            toast({
+                variant: 'destructive',
+                title: 'Cannot Delete Purchased Item',
+                description: 'This medicine is part of your official purchase history and cannot be deleted here.'
+            });
+            return;
+        }
+
+        const cabinetRecordsStr = localStorage.getItem(MED_CABINET_STORAGE_KEY);
+        let cabinetRecords = cabinetRecordsStr ? JSON.parse(cabinetRecordsStr) : [];
+        cabinetRecords = cabinetRecords.filter((med: any) => med.id !== id);
+        updateManualMedicines(cabinetRecords);
+
+        toast({
+            title: 'Medicine Removed',
+            description: 'The selected medicine has been removed from your list.'
+        });
+    };
+
 
     const filteredMedicines = medicines.filter(med => 
         med.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -244,6 +265,7 @@ export function MyMedicinesClient() {
                                     <TableHead>Source</TableHead>
                                     <TableHead>Date Added</TableHead>
                                     <TableHead>Expiry Date</TableHead>
+                                    <TableHead>Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -257,10 +279,15 @@ export function MyMedicinesClient() {
                                         </TableCell>
                                         <TableCell>{format(new Date(med.dateAdded), 'PPP')}</TableCell>
                                         <TableCell>{getExpiryBadge(med.expiryDate)}</TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteMedicine(med.id, med.source)} disabled={med.source === 'Purchased'}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                                        <TableCell colSpan={5} className="text-center text-muted-foreground">
                                             No medicines found.
                                         </TableCell>
                                     </TableRow>
