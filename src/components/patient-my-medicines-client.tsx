@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { QRCodeAddMedicineClient } from './qrcode-add-medicine-client';
-import { MedicineCabinetClient } from '@/components/medicine-cabinet-client';
 
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
@@ -148,13 +147,22 @@ export function MyMedicinesClient() {
     }
 
     const handleQRScan = useCallback((data: {name: string, expDate: string}) => {
-        setNewMedName(data.name);
-        setNewMedExpiry(data.expDate);
+        const newMed = {
+            id: `um${Date.now()}`,
+            name: data.name,
+            purchaseDate: new Date().toISOString().split('T')[0], // Default to today
+            expiryDate: data.expDate,
+            source: 'Scanned' as const,
+          };
+        
+        const cabinetRecordsStr = localStorage.getItem(MED_CABINET_STORAGE_KEY);
+        const cabinetRecords = cabinetRecordsStr ? JSON.parse(cabinetRecordsStr) : [];
+        updateManualMedicines([...cabinetRecords, newMed]);
+
         toast({
-            title: "Medicine Details Filled",
-            description: `Details for ${data.name} have been pre-filled. Add a purchase date and save.`,
+            title: "Medicine Added!",
+            description: `${data.name} was added to your medicines via QR scan.`,
         });
-        handleAddMedication('Scanned');
     }, [toast]);
 
 
