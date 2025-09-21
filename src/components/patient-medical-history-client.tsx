@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2, Hospital, Stethoscope, Microscope, Paperclip, Upload, Pill, CalendarDays, FileImage, CircleHelp, StickyNote, Activity } from 'lucide-react';
+import { PlusCircle, Trash2, Stethoscope, Pill, Activity, StickyNote, Paperclip, Upload } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -146,7 +146,7 @@ export function MedicalHistoryClient() {
                 <CardDescription>Record and view your medical history timeline.</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-3 gap-8">
-                {/* History Timeline */}
+                {/* History Timeline Section */}
                 <div className="md:col-span-2">
                      <h3 className="font-semibold text-lg mb-4">Your Timeline</h3>
                     <div className="space-y-4">
@@ -194,7 +194,8 @@ export function MedicalHistoryClient() {
                         )}
                     </div>
                 </div>
-                {/* Add New Entry Form */}
+
+                {/* Add New Entry Form Section */}
                 <div className="space-y-4 rounded-lg border p-4 bg-background h-fit">
                     <h3 className="font-semibold text-lg">Add New Entry</h3>
                     
