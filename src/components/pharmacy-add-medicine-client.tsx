@@ -69,7 +69,7 @@ export function AddMedicineClient() {
   }, [toast]);
   
   useEffect(() => {
-    if (mode === 'scanning' && !showForm && document.getElementById(readerId)) {
+    if (mode === 'scanning' && !showForm && document.getElementById(readerId) && !scannerRef.current) {
       const config: Html5QrcodeCameraScanConfig = { 
         fps: 10, 
         qrbox: { width: 250, height: 250 }, 

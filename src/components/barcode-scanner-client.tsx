@@ -11,6 +11,7 @@ import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import { Input } from './ui/input';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 
 export function QRCodeScannerClient() {
@@ -20,8 +21,8 @@ export function QRCodeScannerClient() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const readerId = 'qr-code-reader';
-
+  const readerId = "reader";
+  const placeholderId = "reader-placeholder";
 
   const handleAnalysis = useCallback((qrCode: string) => {
     setErrorInfo(null);
@@ -47,8 +48,35 @@ export function QRCodeScannerClient() {
     });
   }, [toast]);
 
+  const onScanSuccess = useCallback((decodedText: string) => {
+      if (scannerRef.current) {
+        try {
+            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+            }
+        } catch(e) {
+            console.error("Failed to pause scanner", e);
+        }
+      }
+      handleAnalysis(decodedText);
+  }, [handleAnalysis]);
+
+  const handleRescan = () => {
+    setResult(null);
+    setErrorInfo(null);
+    if (scannerRef.current) {
+        try {
+             if (scannerRef.current.getState() !== 2) { // 2 === SCANNING
+                scannerRef.current.resume();
+             }
+        } catch (e) {
+            console.error("Failed to resume scanner", e)
+        }
+    }
+  }
+
   useEffect(() => {
-    if (!document.getElementById(readerId)) return;
+    if (!document.getElementById(readerId) || scannerRef.current) return;
 
     const config: Html5QrcodeCameraScanConfig = {
         qrbox: {
@@ -59,55 +87,53 @@ export function QRCodeScannerClient() {
         rememberLastUsedCamera: true,
       };
 
-    const qrScanner = new Html5QrcodeScanner(
+    const scanner = new Html5QrcodeScanner(
       readerId,
       config,
       /* verbose= */ false
     );
     
-    const onScanSuccess = (decodedText: string) => {
-      if (qrScanner.getState() === 2) { // 2 === SCANNING
-        try {
-            qrScanner.pause(true);
-        } catch(e) {}
-        handleAnalysis(decodedText);
-      }
-    }
-
-    qrScanner.render(onScanSuccess, undefined);
-    scannerRef.current = qrScanner;
+    scanner.render(onScanSuccess, undefined);
+    scannerRef.current = scanner;
 
     return () => {
-        if (scannerRef.current) {
-            try {
-                if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
-                    scannerRef.current.clear();
-                }
-            } catch (error) {
-                console.error("Failed to clear html5QrcodeScanner on unmount.", error);
-            } finally {
-                 scannerRef.current = null;
+       if (scannerRef.current) {
+        try {
+            if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
+                scannerRef.current.clear();
             }
+        } catch(e) {
+             console.error("Failed to clear html5QrcodeScanner on unmount.", e);
+        } finally {
+            scannerRef.current = null;
         }
+      }
     };
-  }, [handleAnalysis]);
+  }, [onScanSuccess]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const tempReaderId = "temp-file-reader";
-    const readerElement = document.createElement('div');
-    readerElement.id = tempReaderId;
-    readerElement.style.display = 'none';
-    document.body.appendChild(readerElement);
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+            scannerRef.current.pause(true);
+        }
+      } catch(e) {}
+    }
+    
+    let placeholder = document.getElementById(placeholderId);
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.id = placeholderId;
+      placeholder.style.display = 'none';
+      document.body.appendChild(placeholder);
+    }
 
-    const html5QrCode = new Html5Qrcode(tempReaderId, false);
+    const html5QrCode = new Html5Qrcode(placeholderId, false);
     html5QrCode.scanFile(file, true)
         .then(decodedText => {
-            if(scannerRef.current && scannerRef.current.getState() === 2) { // 2 === SCANNING
-              scannerRef.current.pause(true);
-            }
             handleAnalysis(decodedText);
         })
         .catch(err => {
@@ -116,28 +142,15 @@ export function QRCodeScannerClient() {
                 title: "Scan Failed",
                 description: "Could not decode QR code from the uploaded image.",
             });
-        })
-        .finally(() => {
-            if (document.body.contains(readerElement)) {
-                document.body.removeChild(readerElement);
+            handleRescan(); // Resume scanner on file read fail
+        }).finally(() => {
+            if(placeholder && document.body.contains(placeholder)) {
+                document.body.removeChild(placeholder);
             }
         });
   };
 
-  const handleRescan = () => {
-    setResult(null);
-    setErrorInfo(null);
-    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
-        try {
-            scannerRef.current.resume();
-        } catch (e) {
-            console.error("Failed to resume scanner", e);
-        }
-    }
-  }
-  
-  const showScanner = !isPending && !result && !errorInfo;
-
+  const showScanner = !result && !errorInfo && !isPending;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -152,7 +165,8 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id={readerId} className={showScanner ? 'w-full' : 'hidden'}></div>
+            <div id={readerId} className={cn(showScanner ? "" : "hidden")}></div>
+
              {errorInfo && (
                 <Alert variant="destructive" className="mt-4">
                   <AlertTitle>Scan Failed</AlertTitle>
@@ -170,10 +184,10 @@ export function QRCodeScannerClient() {
         </CardContent>
          <CardFooter className="grid grid-cols-1 gap-2">
             {!showScanner ? (
-                <Button onClick={handleRescan} disabled={isPending}>
-                    <ScanLine className="mr-2 h-4 w-4" />
-                    Scan Again
-                </Button>
+              <Button onClick={handleRescan} disabled={isPending}>
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  Scan Again
+              </Button>
             ) : (
                 <>
                 <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
@@ -225,6 +239,7 @@ export function QRCodeScannerClient() {
             </CardContent>
           </Card>
         )}
+
         {!isPending && !result && !errorInfo && (
              <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">

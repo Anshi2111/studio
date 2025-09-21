@@ -70,7 +70,7 @@ export function RecordSaleClient() {
   }, [toast]);
   
   useEffect(() => {
-    if (mode === 'scanning' && !scannedMedicine && document.getElementById(readerId)) {
+    if (mode === 'scanning' && !scannedMedicine && document.getElementById(readerId) && !scannerRef.current) {
         const config: Html5QrcodeCameraScanConfig = { 
             fps: 10, 
             qrbox: { width: 250, height: 250 }, 

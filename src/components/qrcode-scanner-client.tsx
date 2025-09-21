@@ -76,7 +76,7 @@ export function QRCodeScannerClient() {
   }
 
   useEffect(() => {
-    if (!document.getElementById(readerId)) return;
+    if (!document.getElementById(readerId) || scannerRef.current) return;
 
     const config: Html5QrcodeCameraScanConfig = {
         qrbox: {
@@ -99,10 +99,9 @@ export function QRCodeScannerClient() {
     return () => {
        if (scannerRef.current) {
         try {
-            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
-                scannerRef.current.pause(true);
+            if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
+                scannerRef.current.clear();
             }
-            scannerRef.current.clear();
         } catch(e) {
              console.error("Failed to clear html5QrcodeScanner on unmount.", e);
         } finally {
