@@ -68,7 +68,7 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (isManualEntry || scannedMedicine || scannerRef.current) return;
+    if (isManualEntry || scannedMedicine || document.getElementById('sale-reader')?.innerHTML !== '') return;
 
     const qrScanner = new Html5QrcodeScanner(
       'sale-reader',
@@ -104,10 +104,6 @@ export function RecordSaleClient() {
       setErrorInfo(null);
       setIsManualEntry(false);
       resetForm();
-      if(scannerRef.current) {
-        scannerRef.current.clear().catch(e => console.error(e));
-        scannerRef.current = null;
-      }
   }
   
   const handleRecordSale = () => {

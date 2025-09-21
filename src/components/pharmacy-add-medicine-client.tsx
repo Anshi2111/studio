@@ -65,7 +65,7 @@ export function AddMedicineClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (!showScanner || scannerRef.current) {
+    if (!showScanner || document.getElementById('reader')?.innerHTML !== "") {
         return;
     }
 
@@ -110,10 +110,6 @@ export function AddMedicineClient() {
   const handleClear = () => {
     resetForm();
     setShowScanner(true);
-    if(scannerRef.current) {
-        scannerRef.current.clear();
-        scannerRef.current = null;
-    }
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item.",

@@ -19,7 +19,7 @@ export function QRCodeScannerClient() {
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
 
   const handleAnalysis = useCallback((qrCode: string) => {
@@ -47,7 +47,7 @@ export function QRCodeScannerClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (document.getElementById('reader')?.innerHTML !== "" || scanner) return;
+    if (document.getElementById('reader')?.innerHTML !== "" || scannerRef.current) return;
 
     const qrScanner = new Html5QrcodeScanner(
       'reader',
@@ -64,22 +64,23 @@ export function QRCodeScannerClient() {
     
     function onScanSuccess(decodedText: string) {
       if (qrScanner.getState() === 2) { // 2 === SCANNING
-        qrScanner.pause();
+        qrScanner.pause(true);
         handleAnalysis(decodedText);
       }
     }
 
     qrScanner.render(onScanSuccess, undefined);
-    setScanner(qrScanner);
+    scannerRef.current = qrScanner;
 
     return () => {
-       if (qrScanner && qrScanner.getState() !== 1) { // 1 === NOT_STARTED
-        qrScanner.clear().catch(error => {
+       if (scannerRef.current) { 
+        scannerRef.current.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });
+        scannerRef.current = null;
       }
     };
-  }, [handleAnalysis, scanner]);
+  }, [handleAnalysis]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -89,6 +90,9 @@ export function QRCodeScannerClient() {
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCode.scanFile(file, true)
             .then(decodedText => {
+                if(scannerRef.current && scannerRef.current.getState() === 2) {
+                  scannerRef.current.pause(true);
+                }
                 handleAnalysis(decodedText);
             })
             .catch(err => {
@@ -111,8 +115,8 @@ export function QRCodeScannerClient() {
   const handleRescan = () => {
     setResult(null);
     setErrorInfo(null);
-    if (scanner && scanner.getState() !== 2) { // 2 === SCANNING
-        scanner.resume();
+    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
+        scannerRef.current.resume();
     }
   }
 
