@@ -17,7 +17,8 @@ interface HistoryEntry {
     medicineName: string;
     doctorName: string;
     appointmentDate: string;
-    tabletsConsumed: number;
+    tabletsPerDay: number;
+    courseDurationDays: number;
     conditionNotes: string;
 }
 
@@ -29,7 +30,8 @@ export function MedicalHistoryClient() {
     const [medicineName, setMedicineName] = useState('');
     const [doctorName, setDoctorName] = useState('');
     const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
-    const [tabletsConsumed, setTabletsConsumed] = useState('');
+    const [tabletsPerDay, setTabletsPerDay] = useState('');
+    const [courseDurationDays, setCourseDurationDays] = useState('');
     const [conditionNotes, setConditionNotes] = useState('');
 
     useEffect(() => {
@@ -62,7 +64,8 @@ export function MedicalHistoryClient() {
             medicineName,
             doctorName,
             appointmentDate,
-            tabletsConsumed: parseInt(tabletsConsumed) || 0,
+            tabletsPerDay: parseInt(tabletsPerDay) || 0,
+            courseDurationDays: parseInt(courseDurationDays) || 0,
             conditionNotes,
         };
 
@@ -73,7 +76,8 @@ export function MedicalHistoryClient() {
         setMedicineName('');
         setDoctorName('');
         setAppointmentDate(new Date().toISOString().split('T')[0]);
-        setTabletsConsumed('');
+        setTabletsPerDay('');
+        setCourseDurationDays('');
         setConditionNotes('');
     };
     
@@ -103,7 +107,11 @@ export function MedicalHistoryClient() {
                                 </CardHeader>
                                 <CardContent className="p-4 pt-0">
                                     <p className="text-sm text-muted-foreground">{entry.conditionNotes}</p>
-                                    {entry.tabletsConsumed > 0 && <p className="text-xs mt-2">Tablets Consumed: {entry.tabletsConsumed}</p>}
+                                    {(entry.tabletsPerDay > 0 || entry.courseDurationDays > 0) && (
+                                        <p className="text-xs mt-2">
+                                            Dosage: {entry.tabletsPerDay || 'N/A'} tablets/day for {entry.courseDurationDays || 'N/A'} days
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
                         )) : (
@@ -125,9 +133,15 @@ export function MedicalHistoryClient() {
                         <Label htmlFor="hist-date">Appointment Date</Label>
                         <Input id="hist-date" type="date" value={appointmentDate} onChange={e => setAppointmentDate(e.target.value)} />
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="hist-tablets">Tablets Consumed/Left</Label>
-                        <Input id="hist-tablets" type="number" value={tabletsConsumed} onChange={e => setTabletsConsumed(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="hist-tablets">Tablets/Day</Label>
+                            <Input id="hist-tablets" type="number" value={tabletsPerDay} onChange={e => setTabletsPerDay(e.target.value)} placeholder="e.g., 2" />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="hist-duration">Duration (Days)</Label>
+                            <Input id="hist-duration" type="number" value={courseDurationDays} onChange={e => setCourseDurationDays(e.target.value)} placeholder="e.g., 14" />
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="hist-notes">Condition Notes</Label>
