@@ -74,7 +74,9 @@ export function RecordSaleClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-        scannerRef.current.pause(true);
+        if(scannerRef.current.getState() === 2) { // SCANNING
+            scannerRef.current.pause(true);
+        }
     }
     handleBarcodeScanned(decodedText);
   }, [handleBarcodeScanned]);
@@ -107,9 +109,6 @@ export function RecordSaleClient() {
       setErrorInfo(null);
       setMode('scanning');
       resetForm();
-      if(scannerRef.current && scannerRef.current.getState() !== 2) {
-        scannerRef.current.resume();
-      }
   }
   
   const handleRecordSale = () => {
@@ -175,7 +174,7 @@ export function RecordSaleClient() {
     }
   }
 
-  const showScanner = mode === 'scanning' && !scannedMedicine;
+  const showScanner = mode === 'scanning' && !scannedMedicine && !isFetching;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -209,7 +208,7 @@ export function RecordSaleClient() {
                         {errorInfo.qrCode && (
                            <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                                <Search className="h-4 w-4" />
-                               Search for this code on Google
+                               Search for this code online
                            </Link>
                         )}
                     </AlertDescription>
@@ -222,7 +221,7 @@ export function RecordSaleClient() {
                     <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)} disabled={!manualBarcode}>Find Medicine</Button>
                 </div>
             )}
-             {scannedMedicine && (
+             {scannedMedicine && !isFetching && (
                 <Alert>
                     <Package className="h-4 w-4" />
                     <AlertTitle>{scannedMedicine.name}</AlertTitle>
@@ -256,11 +255,19 @@ export function RecordSaleClient() {
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            {!scannedMedicine && (
+            {!scannedMedicine && !isFetching && (
                  <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Info className="h-10 w-10" />
                         <p className="font-medium">Scan or enter a medicine QR code to begin.</p>
+                    </div>
+                </div>
+            )}
+            {isFetching && (
+                 <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-10 w-10 animate-spin" />
+                        <p className="font-medium">Fetching details...</p>
                     </div>
                 </div>
             )}

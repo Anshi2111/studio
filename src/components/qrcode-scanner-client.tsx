@@ -47,7 +47,7 @@ export function QRCodeScannerClient() {
 
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
-        scannerRef.current.pause(true);
+        // scannerRef.current.pause(true);
       }
       handleAnalysis(decodedText);
   }, [handleAnalysis]);
@@ -68,7 +68,14 @@ export function QRCodeScannerClient() {
         /* verbose= */ false
       );
       
-      qrScanner.render(onScanSuccess, undefined);
+      const successCallback = (decodedText: string, decodedResult: any) => {
+        if(scannerRef.current) {
+            scannerRef.current.pause(true);
+            onScanSuccess(decodedText);
+        }
+      }
+
+      qrScanner.render(successCallback, undefined);
       scannerRef.current = qrScanner;
     }
 
@@ -124,7 +131,7 @@ export function QRCodeScannerClient() {
     }
   }
 
-  const showScanner = !result && !errorInfo;
+  const showScanner = !result && !errorInfo && !isPending;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -153,7 +160,7 @@ export function QRCodeScannerClient() {
                     {errorInfo.qrCode && (
                        <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                            <Search className="h-4 w-4" />
-                           Search for this code on Google
+                           Search for this code online
                        </Link>
                     )}
                   </AlertDescription>
@@ -167,7 +174,7 @@ export function QRCodeScannerClient() {
                   Scan Again
               </Button>
             )}
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={!showScanner ? '' : 'col-span-2'}>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={showScanner ? 'col-span-2' : ''}>
               <Upload className="mr-2 h-4 w-4" />
               Upload QR Code
             </Button>
