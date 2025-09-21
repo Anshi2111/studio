@@ -51,6 +51,10 @@ export function RecordSaleClient() {
         if (response.success && response.data) {
             setScannedMedicine(response.data);
             setIsManualEntry(false);
+             if (scannerRef.current) {
+              scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
+              scannerRef.current = null;
+            }
             toast({
                 title: "Medicine Found!",
                 description: `${response.data.name} is ready to be sold.`,
@@ -68,7 +72,7 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (isManualEntry || scannedMedicine || document.getElementById('sale-reader')?.innerHTML !== '') return;
+    if (isManualEntry || scannedMedicine || document.getElementById('sale-reader')?.innerHTML !== '' || scannerRef.current) return;
 
     const qrScanner = new Html5QrcodeScanner(
       'sale-reader',
@@ -77,7 +81,7 @@ export function RecordSaleClient() {
     );
 
     function onScanSuccess(decodedText: string) {
-        if (qrScanner.getState() === 2) {
+        if (qrScanner.getState() === 2) { // SCANNING
             qrScanner.clear();
             scannerRef.current = null;
             handleBarcodeScanned(decodedText);

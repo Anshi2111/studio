@@ -66,7 +66,7 @@ export function QRCodeScannerClient() {
     
     function onScanSuccess(decodedText: string) {
       if (qrScanner.getState() === 2) { // 2 === SCANNING
-        qrScanner.pause();
+        qrScanner.pause(true);
         handleAnalysis(decodedText);
       }
     }
@@ -92,7 +92,7 @@ export function QRCodeScannerClient() {
     html5QrCode.scanFile(file, true)
         .then(decodedText => {
             if(scannerRef.current) {
-                scannerRef.current.pause();
+                scannerRef.current.pause(true);
             }
             handleAnalysis(decodedText);
         })

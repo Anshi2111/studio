@@ -54,7 +54,8 @@ export function AddMedicineClient() {
             });
         } else {
             setSource('manual');
-            setErrorInfo({ message: response.error || "Medicine not found.", qrCode: response.qrCode });
+            const errorMessage = response.error || 'Medicine not found.';
+            setErrorInfo({ message: errorMessage, qrCode: response.qrCode });
             toast({
                 variant: 'default',
                 title: "New Medicine Detected",
@@ -65,7 +66,7 @@ export function AddMedicineClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (!showScanner || document.getElementById('reader')?.innerHTML !== "") {
+    if (!showScanner || document.getElementById('reader')?.innerHTML !== "" || scannerRef.current) {
         return;
     }
 
