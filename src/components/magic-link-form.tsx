@@ -74,23 +74,21 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     setLoading(true);
     setError(null);
 
-    // --- MOCK LOGIN FOR PREVIEW ENVIRONMENT ---
-    // In a real deployed app, the magic link would not work on a preview URL.
-    // This simulates a successful login for development and preview purposes.
-    if (process.env.NODE_ENV === 'development' || window.location.hostname.includes('localhost')) {
-        console.log("MOCK LOGIN: Simulating magic link sign-in for preview.");
-        setTimeout(() => {
-            toast({
-                title: 'Mock Login Successful',
-                description: `Redirecting to the ${title}...`,
-            });
-            router.push(redirectPath);
-        }, 1000);
-        return;
-    }
-    // --- END MOCK LOGIN ---
+    // --- MOCK LOGIN FOR DEVELOPMENT/PREVIEW ENVIRONMENT ---
+    // This simulates a successful login without sending an email, which is ideal for development.
+    console.log("MOCK LOGIN: Simulating magic link sign-in for development environment.");
+    setEmailSent(true);
+    setTimeout(() => {
+        toast({
+            title: 'Login Successful (Simulated)',
+            description: `Redirecting to the ${title}...`,
+        });
+        router.push(redirectPath);
+    }, 1500);
 
-
+    /*
+    // --- PRODUCTION LOGIC ---
+    // In a real deployed app, you would uncomment this and remove the mock login block above.
     const actionCodeSettings = {
       url: `${window.location.origin}${loginPath}`,
       handleCodeInApp: true,
@@ -114,6 +112,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   if (isVerifying) {
@@ -136,7 +135,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
           <div className="flex justify-center">{icon}</div>
           <CardTitle className="text-3xl font-headline">{title}</CardTitle>
           <CardDescription>
-            {emailSent ? 'Check your inbox for the magic link!' : 'Enter your email to receive a passwordless login link.'}
+            {emailSent ? 'Preparing your dashboard...' : 'Enter your email to receive a passwordless login link.'}
           </CardDescription>
         </CardHeader>
 
@@ -144,11 +143,14 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
           <CardContent>
             <Alert>
               <Mail className="h-4 w-4" />
-              <AlertTitle>Email Sent!</AlertTitle>
+              <AlertTitle>Magic Link Sent!</AlertTitle>
               <AlertDescription>
-                We've sent a magic link to <strong>{email}</strong>. Click the link in the email to sign in. You can close this window.
+                In a live environment, you would check your email now. For this demo, we will redirect you automatically.
               </AlertDescription>
             </Alert>
+             <div className="flex justify-center mt-4">
+                 <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+             </div>
           </CardContent>
         ) : (
           <form onSubmit={handleMagicLinkSignIn}>
