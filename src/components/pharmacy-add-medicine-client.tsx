@@ -69,22 +69,22 @@ export function AddMedicineClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-       scannerRef.current.pause(true).catch(()=>{});
+       try {
+        scannerRef.current.pause(true);
+       } catch(e){}
     }
     handleBarcodeDetection(decodedText);
   }, [handleBarcodeDetection]);
 
   useEffect(() => {
-    if (mode === 'scanning' && !showForm && document.getElementById('reader')) {
-      const qrScanner = new Html5QrcodeScanner(
+    if (mode === 'scanning' && !showForm) {
+      const scanner = new Html5QrcodeScanner(
         'reader',
         { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
         false
       );
-      if (!scannerRef.current) {
-        qrScanner.render(onScanSuccess, undefined);
-        scannerRef.current = qrScanner;
-      }
+      scanner.render(onScanSuccess, undefined);
+      scannerRef.current = scanner;
     }
 
     return () => {
@@ -92,10 +92,7 @@ export function AddMedicineClient() {
          try {
            scannerRef.current.clear();
          } catch (err) {
-            // It's okay if this fails, e.g. if the component was already unmounted.
             console.error("Failed to clear scanner on unmount:", err)
-         } finally {
-            scannerRef.current = null;
          }
       }
     };
@@ -119,7 +116,9 @@ export function AddMedicineClient() {
     setShowForm(false);
     setMode('scanning');
     if (scannerRef.current) {
-      scannerRef.current.resume().catch(()=>{});
+      try {
+        scannerRef.current.resume();
+      } catch (e){}
     }
   };
 

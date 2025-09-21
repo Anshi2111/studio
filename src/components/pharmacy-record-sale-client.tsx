@@ -46,7 +46,11 @@ export function RecordSaleClient() {
     setScannedMedicine(null);
     resetForm();
     if(scannerRef.current) {
-        scannerRef.current.clear().catch(e => console.error(e));
+        try {
+            scannerRef.current.clear();
+        } catch(e) {
+            console.error(e);
+        }
         scannerRef.current = null;
     }
 
@@ -74,23 +78,23 @@ export function RecordSaleClient() {
   
   const onScanSuccess = useCallback((decodedText: string) => {
     if (scannerRef.current) {
-       scannerRef.current.pause(true).catch(()=>{});
+       try {
+        scannerRef.current.pause(true);
+       } catch(e){}
     }
     handleBarcodeScanned(decodedText);
   }, [handleBarcodeScanned]);
 
 
   useEffect(() => {
-    if (mode === 'scanning' && !scannedMedicine && document.getElementById('sale-reader')) {
-      if (!scannerRef.current) {
-        const qrScanner = new Html5QrcodeScanner(
+    if (mode === 'scanning' && !scannedMedicine && !scannerRef.current) {
+        const scanner = new Html5QrcodeScanner(
             'sale-reader',
             { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
             false
         );
-        qrScanner.render(onScanSuccess, undefined);
-        scannerRef.current = qrScanner;
-      }
+        scanner.render(onScanSuccess, undefined);
+        scannerRef.current = scanner;
     }
 
     return () => {
@@ -98,10 +102,9 @@ export function RecordSaleClient() {
           try {
               scannerRef.current.clear();
           } catch (error) {
-              // It's okay if this fails.
               console.error("Failed to clear scanner on unmount:", error);
           } finally {
-              scannerRef.current = null;
+             scannerRef.current = null;
           }
       }
     };
@@ -168,6 +171,12 @@ export function RecordSaleClient() {
   const isFormValid = patientPhone && quantity && parseInt(quantity) > 0;
 
   const handleToggleManual = () => {
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.clear();
+      } catch(e) {}
+      scannerRef.current = null;
+    }
     setMode(prev => prev === 'manual' ? 'scanning' : 'manual');
     setErrorInfo(null); 
     setScannedMedicine(null); 

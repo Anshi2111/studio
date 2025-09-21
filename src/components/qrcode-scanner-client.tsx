@@ -47,47 +47,50 @@ export function QRCodeScannerClient() {
 
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
-        // Checking state is not super reliable, so we just try to pause.
-        // It's okay if this fails.
-        scannerRef.current.pause(true).catch(()=>{});
+        try {
+            scannerRef.current.pause(true);
+        } catch(e) {
+            console.error("Failed to pause scanner", e);
+        }
       }
       handleAnalysis(decodedText);
   }, [handleAnalysis]);
 
+  const handleRescan = () => {
+    setResult(null);
+    setErrorInfo(null);
+    if (scannerRef.current) {
+        try {
+            scannerRef.current.resume();
+        } catch (e) {
+            console.error("Failed to resume scanner", e)
+        }
+    }
+  }
 
   useEffect(() => {
-    if (!scannerRef.current && document.getElementById('reader')) {
-      const qrScanner = new Html5QrcodeScanner(
-        'reader',
-        {
-          qrbox: {
-            width: 250,
-            height: 250,
-          },
-          fps: 5,
-          rememberLastUsedCamera: true,
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      {
+        qrbox: {
+          width: 250,
+          height: 250,
         },
-        /* verbose= */ false
-      );
-      
-      qrScanner.render(onScanSuccess, undefined);
-      scannerRef.current = qrScanner;
-    }
+        fps: 5,
+        rememberLastUsedCamera: true,
+      },
+      /* verbose= */ false
+    );
+    
+    scanner.render(onScanSuccess, undefined);
+    scannerRef.current = scanner;
 
     return () => {
        if (scannerRef.current) {
         try {
-            // getState() can throw if scanner is in a weird state.
-            if (scannerRef.current.getState() !== 1) { // 1 = NOT_STARTED
-                scannerRef.current.clear();
-            }
+            scannerRef.current.clear();
         } catch(e) {
-            // If getState() fails, we still want to try to clear.
-             scannerRef.current.clear().catch(error => {
-                console.error("Failed to clear html5QrcodeScanner on unmount.", error);
-             });
-        } finally {
-            scannerRef.current = null;
+             console.error("Failed to clear html5QrcodeScanner on unmount.", e);
         }
       }
     };
@@ -98,7 +101,9 @@ export function QRCodeScannerClient() {
     if (!file) return;
 
     if (scannerRef.current) {
-      scannerRef.current.pause(true).catch(()=>{});
+      try {
+        scannerRef.current.pause(true);
+      } catch(e) {}
     }
     
     const placeholderId = "reader-placeholder";
@@ -125,14 +130,6 @@ export function QRCodeScannerClient() {
         });
   };
 
-  const handleRescan = () => {
-    setResult(null);
-    setErrorInfo(null);
-    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 = SCANNING
-        scannerRef.current.resume().catch(()=>{});
-    }
-  }
-
   const showScanner = !result && !errorInfo && !isPending;
 
   return (
@@ -148,11 +145,8 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            {showScanner ? (
-              <div id="reader" className="w-full"></div>
-            ) : (
-              <div id="reader-placeholder" className="hidden"></div>
-            )}
+            <div id="reader" className={cn(showScanner ? "" : "hidden")}></div>
+            <div id="reader-placeholder" className="hidden"></div>
 
              {errorInfo && (
                 <Alert variant="destructive" className="mt-4">
