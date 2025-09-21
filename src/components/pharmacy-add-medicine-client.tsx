@@ -30,7 +30,7 @@ export function AddMedicineClient() {
   const [qrCode, setQrCode] = useState('');
   const [source, setSource] = useState<'firestore' | 'public_api' | 'manual' | null>(null);
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
     setShowScanner(false);
@@ -65,7 +65,9 @@ export function AddMedicineClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (!showScanner || document.getElementById('reader')?.innerHTML !== "" || scanner) return;
+    if (!showScanner || scannerRef.current) {
+        return;
+    }
 
     const qrScanner = new Html5QrcodeScanner(
       'reader',
@@ -76,21 +78,21 @@ export function AddMedicineClient() {
     function onScanSuccess(decodedText: string, decodedResult: any) {
       if (qrScanner.getState() === 2) {
           qrScanner.clear();
+          scannerRef.current = null;
           handleBarcodeDetection(decodedText);
       }
     }
 
     qrScanner.render(onScanSuccess, undefined);
-    setScanner(qrScanner);
-
+    scannerRef.current = qrScanner;
 
     return () => {
-      // Cleanup scanner on component unmount if it's still active
-      if (qrScanner && qrScanner.getState() !== 1) { // 1 is NOT_STARTED
-        qrScanner.clear().catch(err => console.error("Scanner clear failed", err));
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
+        scannerRef.current = null;
       }
     };
-  }, [showScanner, handleBarcodeDetection, scanner]);
+  }, [showScanner, handleBarcodeDetection]);
   
 
   const resetForm = () => {
@@ -103,12 +105,15 @@ export function AddMedicineClient() {
       setQrCode('');
       setSource(null);
       setErrorInfo(null);
-      setScanner(null);
   }
 
   const handleClear = () => {
     resetForm();
     setShowScanner(true);
+    if(scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+    }
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item.",
@@ -136,9 +141,9 @@ export function AddMedicineClient() {
   const handleManualEntry = () => {
     setShowScanner(false);
     setSource('manual');
-    if (scanner) {
-      scanner.clear().catch(err => console.error("Scanner clear failed", err));
-      setScanner(null);
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
+      scannerRef.current = null;
     }
   }
 

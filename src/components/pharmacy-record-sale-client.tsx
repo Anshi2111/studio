@@ -26,7 +26,7 @@ export function RecordSaleClient() {
   
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
 
   // Form state
@@ -68,7 +68,7 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (scannedMedicine || isManualEntry || document.getElementById('sale-reader')?.innerHTML !== "" || scanner) return;
+    if (isManualEntry || scannedMedicine || scannerRef.current) return;
 
     const qrScanner = new Html5QrcodeScanner(
       'sale-reader',
@@ -79,22 +79,24 @@ export function RecordSaleClient() {
     function onScanSuccess(decodedText: string) {
         if (qrScanner.getState() === 2) {
             qrScanner.clear();
+            scannerRef.current = null;
             handleBarcodeScanned(decodedText);
         }
     }
     
     qrScanner.render(onScanSuccess, undefined);
-    setScanner(qrScanner);
+    scannerRef.current = qrScanner;
 
 
     return () => {
-      if (qrScanner && qrScanner.getState() !== 1) {
-          qrScanner.clear().catch(error => {
+      if (scannerRef.current) {
+          scannerRef.current.clear().catch(error => {
               console.error("Failed to clear sale scanner.", error);
           });
+          scannerRef.current = null;
       }
     };
-  }, [isManualEntry, scannedMedicine, handleBarcodeScanned, scanner]);
+  }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
 
 
   const handleRescan = () => {
@@ -102,7 +104,10 @@ export function RecordSaleClient() {
       setErrorInfo(null);
       setIsManualEntry(false);
       resetForm();
-      setScanner(null);
+      if(scannerRef.current) {
+        scannerRef.current.clear().catch(e => console.error(e));
+        scannerRef.current = null;
+      }
   }
   
   const handleRecordSale = () => {
@@ -156,6 +161,17 @@ export function RecordSaleClient() {
   };
 
   const isFormValid = patientPhone && quantity && parseInt(quantity) > 0;
+
+  const handleToggleManual = () => {
+    setIsManualEntry(prev => !prev); 
+    setErrorInfo(null); 
+    setScannedMedicine(null); 
+    resetForm(); 
+    if(scannerRef.current){
+      scannerRef.current.clear().catch(e => console.error(e));
+      scannerRef.current = null;
+    }
+  }
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -215,7 +231,7 @@ export function RecordSaleClient() {
                 <ScanLine className="mr-2 h-4 w-4" />
                 New Sale
             </Button>
-             <Button variant="secondary" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); resetForm(); if(scanner){scanner.clear()} setScanner(null); }} disabled={isFetching}>
+             <Button variant="secondary" className="w-full" onClick={handleToggleManual} disabled={isFetching}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>
