@@ -75,20 +75,22 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     setError(null);
 
     // --- MOCK LOGIN FOR DEVELOPMENT/PREVIEW ENVIRONMENT ---
-    // This simulates a successful login without sending an email, which is ideal for development.
-    console.log("MOCK LOGIN: Simulating magic link sign-in for development environment.");
-    setEmailSent(true);
-    setTimeout(() => {
-        toast({
-            title: 'Login Successful (Simulated)',
-            description: `Redirecting to the ${title}...`,
-        });
-        router.push(redirectPath);
-    }, 1500);
+    // This simulates a successful login without sending an email.
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("MOCK LOGIN: Simulating magic link sign-in for development environment.");
+      setEmailSent(true);
+      setTimeout(() => {
+          toast({
+              title: 'Login Successful (Simulated)',
+              description: `Redirecting to the ${title}...`,
+          });
+          router.push(redirectPath);
+      }, 1500);
+      return; // Important: exit the function here
+    }
 
-    /*
+    
     // --- PRODUCTION LOGIC ---
-    // In a real deployed app, you would uncomment this and remove the mock login block above.
     const actionCodeSettings = {
       url: `${window.location.origin}${loginPath}`,
       handleCodeInApp: true,
@@ -112,7 +114,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     } finally {
       setLoading(false);
     }
-    */
+    
   };
 
   if (isVerifying) {
