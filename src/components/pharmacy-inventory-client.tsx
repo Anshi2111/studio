@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
 interface InventoryItem {
+    id: string; // Added for unique key
     medName: string;
     batchNo: string;
     mfgDate: string;
@@ -31,8 +32,8 @@ export function InventoryClient() {
         }
     }, []);
     
-    const handleRemoveItem = (batchNo: string) => {
-        const updatedInventory = inventory.filter(item => item.batchNo !== batchNo);
+    const handleRemoveItem = (id: string) => {
+        const updatedInventory = inventory.filter(item => item.id !== id);
         setInventory(updatedInventory);
         localStorage.setItem(MOCK_INVENTORY_KEY, JSON.stringify(updatedInventory));
     };
@@ -81,7 +82,7 @@ export function InventoryClient() {
                     </TableHeader>
                     <TableBody>
                         {filteredInventory.length > 0 ? filteredInventory.map((item) => (
-                            <TableRow key={item.batchNo}>
+                            <TableRow key={item.id}>
                                 <TableCell className="font-medium">{item.medName}</TableCell>
                                 <TableCell>{item.batchNo}</TableCell>
                                 <TableCell>{item.quantity}</TableCell>
@@ -89,7 +90,7 @@ export function InventoryClient() {
                                 <TableCell>{item.supplier}</TableCell>
                                 <TableCell>{getStatusBadge(item.quantity, item.expiryDate)}</TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.batchNo)}>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </Button>
                                 </TableCell>
