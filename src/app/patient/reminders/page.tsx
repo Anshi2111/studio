@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Bell } from 'lucide-react';
 import { format, differenceInDays, addDays, isBefore } from 'date-fns';
-import { HISTORY_STORAGE_KEY } from '@/components/health-record-client';
+import { HISTORY_STORAGE_KEY } from '@/components/patient-medical-history-client';
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
 const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
@@ -18,7 +18,7 @@ interface Reminder {
     type: 'expiry' | 'refill' | 'dosage';
 }
 
-export function RemindersClient() {
+export default function RemindersPage() {
     const [reminders, setReminders] = useState<Reminder[]>([]);
     
     useEffect(() => {
@@ -86,29 +86,37 @@ export function RemindersClient() {
     }, []);
     
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Reminders & Alerts</CardTitle>
-                <CardDescription>Manage expiry, dosage, and refill reminders.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {reminders.length > 0 ? (
-                    <div className="space-y-4">
-                        {reminders.map(reminder => (
-                            <Alert key={reminder.id} variant={reminder.type === 'expiry' ? 'destructive' : 'default'}>
-                                <Bell className="h-4 w-4" />
-                                <AlertTitle>{reminder.title}</AlertTitle>
-                                <AlertDescription>{reminder.description}</AlertDescription>
-                            </Alert>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <Bell className="mx-auto h-12 w-12" />
-                        <p className="mt-4">You have no active reminders.</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+        <div>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+                    <Bell className="h-8 w-8" />
+                    My Reminders
+                </h1>
+            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Reminders & Alerts</CardTitle>
+                    <CardDescription>Manage expiry, dosage, and refill reminders.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {reminders.length > 0 ? (
+                        <div className="space-y-4">
+                            {reminders.map(reminder => (
+                                <Alert key={reminder.id} variant={reminder.type === 'expiry' ? 'destructive' : 'default'}>
+                                    <Bell className="h-4 w-4" />
+                                    <AlertTitle>{reminder.title}</AlertTitle>
+                                    <AlertDescription>{reminder.description}</AlertDescription>
+                                </Alert>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Bell className="mx-auto h-12 w-12" />
+                            <p className="mt-4">You have no active reminders.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

@@ -104,7 +104,7 @@ function FileInputButton({ label, onFileChange, selectedFileName, onClear, icon 
     );
 }
 
-export function HealthRecordClient() {
+export function MedicalHistoryClient() {
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [formState, setFormState] = useState<Omit<HistoryEntry, 'id'>>(defaultEntry);
     const [isAdding, setIsAdding] = useState(false);
@@ -195,7 +195,7 @@ export function HealthRecordClient() {
         return (
              <Card>
                 <CardHeader>
-                    <CardTitle>Add New Health Record</CardTitle>
+                    <CardTitle>Add New Medical Record</CardTitle>
                     <CardDescription>Fill out the details below to add a new record to your timeline.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -331,12 +331,12 @@ export function HealthRecordClient() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Health Record</CardTitle>
+                    <CardTitle>Medical History</CardTitle>
                     <CardDescription>A timeline of your past diagnoses, prescriptions, and doctor visits.</CardDescription>
                 </div>
                 <Button onClick={() => setIsAdding(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Record
+                    Add New Entry
                 </Button>
             </CardHeader>
             <CardContent>
@@ -366,7 +366,7 @@ export function HealthRecordClient() {
                                             {(entry.prescriptionImageName || entry.labReportName) && (
                                                 <div className="text-sm space-y-2">
                                                     <strong className="block text-foreground">Attachments</strong>
-                                                    {entry.prescriptionImageName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.prescriptionImagename}</span></div>}
+                                                    {entry.prescriptionImageName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.prescriptionImageName}</span></div>}
                                                     {entry.labReportName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.labReportName}</span></div>}
                                                 </div>
                                             )}
@@ -388,7 +388,7 @@ export function HealthRecordClient() {
                             ))}
                         </Accordion>
                     ) : (
-                        <p className="text-center text-muted-foreground py-8">No health records yet. Click "Add New Record" to begin.</p>
+                        <p className="text-center text-muted-foreground py-8">No medical history yet. Click "Add New Entry" to begin.</p>
                     )}
                 </div>
             </CardContent>
