@@ -8,9 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Upload, Database, Cloud, Search } from 'lucide-react';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
-import { Html5Qrcode, Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
 import { Input } from './ui/input';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 
 export function QRCodeScannerClient() {
@@ -20,6 +21,8 @@ export function QRCodeScannerClient() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const readerId = "reader";
+  const placeholderId = "reader-placeholder";
 
   const handleAnalysis = useCallback((qrCode: string) => {
     setErrorInfo(null);
@@ -48,7 +51,9 @@ export function QRCodeScannerClient() {
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
         try {
-            scannerRef.current.pause(true);
+            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+            }
         } catch(e) {
             console.error("Failed to pause scanner", e);
         }
@@ -61,7 +66,9 @@ export function QRCodeScannerClient() {
     setErrorInfo(null);
     if (scannerRef.current) {
         try {
-            scannerRef.current.resume();
+             if (scannerRef.current.getState() !== 2) { // 2 === SCANNING
+                scannerRef.current.resume();
+             }
         } catch (e) {
             console.error("Failed to resume scanner", e)
         }
@@ -69,16 +76,20 @@ export function QRCodeScannerClient() {
   }
 
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      {
+    if (!document.getElementById(readerId)) return;
+
+    const config: Html5QrcodeCameraScanConfig = {
         qrbox: {
           width: 250,
           height: 250,
         },
         fps: 5,
         rememberLastUsedCamera: true,
-      },
+      };
+
+    const scanner = new Html5QrcodeScanner(
+      readerId,
+      config,
       /* verbose= */ false
     );
     
@@ -88,9 +99,14 @@ export function QRCodeScannerClient() {
     return () => {
        if (scannerRef.current) {
         try {
+            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+                scannerRef.current.pause(true);
+            }
             scannerRef.current.clear();
         } catch(e) {
              console.error("Failed to clear html5QrcodeScanner on unmount.", e);
+        } finally {
+            scannerRef.current = null;
         }
       }
     };
@@ -102,11 +118,12 @@ export function QRCodeScannerClient() {
 
     if (scannerRef.current) {
       try {
-        scannerRef.current.pause(true);
+        if (scannerRef.current.getState() === 2) { // 2 === SCANNING
+            scannerRef.current.pause(true);
+        }
       } catch(e) {}
     }
     
-    const placeholderId = "reader-placeholder";
     let placeholder = document.getElementById(placeholderId);
     if (!placeholder) {
       placeholder = document.createElement('div');
@@ -127,6 +144,10 @@ export function QRCodeScannerClient() {
                 description: "Could not decode QR code from the uploaded image.",
             });
             handleRescan(); // Resume scanner on file read fail
+        }).finally(() => {
+            if(placeholder && document.body.contains(placeholder)) {
+                document.body.removeChild(placeholder);
+            }
         });
   };
 
@@ -145,8 +166,7 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="reader" className={cn(showScanner ? "" : "hidden")}></div>
-            <div id="reader-placeholder" className="hidden"></div>
+            <div id={readerId} className={cn(showScanner ? "" : "hidden")}></div>
 
              {errorInfo && (
                 <Alert variant="destructive" className="mt-4">

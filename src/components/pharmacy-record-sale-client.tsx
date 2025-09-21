@@ -47,19 +47,6 @@ export function RecordSaleClient() {
     setScannedMedicine(null);
     resetForm();
 
-    if(scannerRef.current) {
-        try {
-            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
-                scannerRef.current.pause(true);
-            }
-            scannerRef.current.clear();
-        } catch(e) {
-            console.error(e);
-        } finally {
-            scannerRef.current = null;
-        }
-    }
-
     startFetchTransition(async () => {
         const response = await fetchMedicineDetails({ qrCode });
         if (response.success && response.data) {
@@ -111,10 +98,9 @@ export function RecordSaleClient() {
     return () => {
       if (scannerRef.current) {
           try {
-              if (scannerRef.current.getState() === 2) { // 2 === SCANNING
-                scannerRef.current.pause(true);
+              if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
+                scannerRef.current.clear();
               }
-              scannerRef.current.clear();
           } catch (error) {
               console.error("Failed to clear scanner on unmount:", error);
           } finally {
@@ -185,12 +171,6 @@ export function RecordSaleClient() {
   const isFormValid = patientPhone && quantity && parseInt(quantity) > 0;
 
   const handleToggleManual = () => {
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.clear();
-      } catch(e) {}
-      scannerRef.current = null;
-    }
     setMode(prev => prev === 'manual' ? 'scanning' : 'manual');
     setErrorInfo(null); 
     setScannedMedicine(null); 

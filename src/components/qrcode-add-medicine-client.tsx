@@ -43,7 +43,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
   }, [toast, onScan]);
 
   useEffect(() => {
-    if (document.getElementById(readerId)) {
+    if (document.getElementById(readerId) && !scannerRef.current) {
         const config: Html5QrcodeCameraScanConfig = {
             qrbox: {
               width: 250,
@@ -77,10 +77,9 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
     return () => {
        if (scannerRef.current) {
         try {
-            if (scannerRef.current.getState() === 2) { // 2 === SCANNING
-                scannerRef.current.pause(true);
+            if (scannerRef.current.getState() !== 1) { // NOT_STARTED
+                scannerRef.current.clear();
             }
-            scannerRef.current.clear();
         } catch(e) {
              console.error("Failed to clear html5QrcodeScanner on unmount.", e);
         } finally {
@@ -95,7 +94,9 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
     setErrorInfo(null);
     if (scannerRef.current) {
         try {
-            scannerRef.current.resume();
+            if(scannerRef.current.getState() !== 2) { // SCANNING
+                scannerRef.current.resume();
+            }
         } catch (e) {
             console.error("Failed to resume scanner", e)
         }

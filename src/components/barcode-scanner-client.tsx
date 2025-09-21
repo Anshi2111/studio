@@ -67,7 +67,9 @@ export function QRCodeScannerClient() {
     
     const onScanSuccess = (decodedText: string) => {
       if (qrScanner.getState() === 2) { // 2 === SCANNING
-        qrScanner.pause(true);
+        try {
+            qrScanner.pause(true);
+        } catch(e) {}
         handleAnalysis(decodedText);
       }
     }
@@ -78,10 +80,9 @@ export function QRCodeScannerClient() {
     return () => {
         if (scannerRef.current) {
             try {
-                if (scannerRef.current.getState() === 2) { // 2 === SCANNING
-                    scannerRef.current.pause(true);
+                if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
+                    scannerRef.current.clear();
                 }
-                scannerRef.current.clear();
             } catch (error) {
                 console.error("Failed to clear html5QrcodeScanner on unmount.", error);
             } finally {
@@ -117,7 +118,9 @@ export function QRCodeScannerClient() {
             });
         })
         .finally(() => {
-            document.body.removeChild(readerElement);
+            if (document.body.contains(readerElement)) {
+                document.body.removeChild(readerElement);
+            }
         });
   };
 

@@ -98,10 +98,9 @@ export function AddMedicineClient() {
     return () => {
       if (scannerRef.current) {
         try {
-          if (scannerRef.current.getState() === 2) { // SCANNING
-            scannerRef.current.pause(true);
-          }
-          scannerRef.current.clear();
+            if (scannerRef.current.getState() !== 1) { // 1 === NOT_STARTED
+                scannerRef.current.clear();
+            }
         } catch (err) {
            console.error("Failed to clear scanner on unmount:", err)
         } finally {
