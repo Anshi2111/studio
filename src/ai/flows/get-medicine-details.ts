@@ -12,8 +12,6 @@ import {z} from 'genkit';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 
-const db = getFirestore(app);
-
 // Define Schemas
 const MedicineDetailsInputSchema = z.object({
     qrCode: z.string().describe('The unique QR code ID of the medicine.'),
@@ -42,6 +40,7 @@ const getMedicineFromFirestore = ai.defineTool(
         outputSchema: MedicineDetailsOutputSchema.omit({ source: true }).optional(),
     },
     async ({ qrCode }) => {
+        const db = getFirestore(app);
         console.log(`Searching Firestore for QR code: ${qrCode}`);
         const docRef = doc(db, 'medicines', qrCode);
         const docSnap = await getDoc(docRef);
@@ -104,6 +103,7 @@ const medicineDetailsFlow = ai.defineFlow(
         if (details) {
             // Step 3: If found in public source, save it back to Firestore
             try {
+                const db = getFirestore(app);
                 await setDoc(doc(db, 'medicines', qrCode), details, { merge: true });
                 console.log(`Saved new medicine ${qrCode} to Firestore.`);
             } catch (error) {
