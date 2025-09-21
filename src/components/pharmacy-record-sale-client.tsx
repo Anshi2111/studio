@@ -26,6 +26,8 @@ export function RecordSaleClient() {
   
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
+  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
@@ -66,29 +68,33 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (scannedMedicine || isManualEntry || document.getElementById('sale-reader')?.innerHTML !== "") return;
+    if (scannedMedicine || isManualEntry || document.getElementById('sale-reader')?.innerHTML !== "" || scanner) return;
 
-    const scanner = new Html5QrcodeScanner(
+    const qrScanner = new Html5QrcodeScanner(
       'sale-reader',
       { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
       false
     );
 
     function onScanSuccess(decodedText: string) {
-        scanner.clear();
-        handleBarcodeScanned(decodedText);
+        if (qrScanner.getState() === 2) {
+            qrScanner.clear();
+            handleBarcodeScanned(decodedText);
+        }
     }
     
-    scanner.render(onScanSuccess, undefined);
+    qrScanner.render(onScanSuccess, undefined);
+    setScanner(qrScanner);
+
 
     return () => {
-      if (scanner && scanner.getState() !== 1) {
-          scanner.clear().catch(error => {
+      if (qrScanner && qrScanner.getState() !== 1) {
+          qrScanner.clear().catch(error => {
               console.error("Failed to clear sale scanner.", error);
           });
       }
     };
-  }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
+  }, [isManualEntry, scannedMedicine, handleBarcodeScanned, scanner]);
 
 
   const handleRescan = () => {
@@ -96,6 +102,7 @@ export function RecordSaleClient() {
       setErrorInfo(null);
       setIsManualEntry(false);
       resetForm();
+      setScanner(null);
   }
   
   const handleRecordSale = () => {
@@ -208,7 +215,7 @@ export function RecordSaleClient() {
                 <ScanLine className="mr-2 h-4 w-4" />
                 New Sale
             </Button>
-             <Button variant="secondary" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); resetForm(); }} disabled={isFetching}>
+             <Button variant="secondary" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); resetForm(); if(scanner){scanner.clear()} setScanner(null); }} disabled={isFetching}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>

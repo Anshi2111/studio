@@ -19,6 +19,8 @@ export function QRCodeScannerClient() {
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+
 
   const handleAnalysis = useCallback((qrCode: string) => {
     setErrorInfo(null);
@@ -45,9 +47,9 @@ export function QRCodeScannerClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (document.getElementById('reader')?.innerHTML !== "") return;
+    if (document.getElementById('reader')?.innerHTML !== "" || scanner) return;
 
-    const scanner = new Html5QrcodeScanner(
+    const qrScanner = new Html5QrcodeScanner(
       'reader',
       {
         qrbox: {
@@ -61,22 +63,23 @@ export function QRCodeScannerClient() {
     );
     
     function onScanSuccess(decodedText: string) {
-      if (scanner.getState() === 2) { // 2 === SCANNING
-        scanner.pause();
+      if (qrScanner.getState() === 2) { // 2 === SCANNING
+        qrScanner.pause();
         handleAnalysis(decodedText);
       }
     }
 
-    scanner.render(onScanSuccess, undefined);
+    qrScanner.render(onScanSuccess, undefined);
+    setScanner(qrScanner);
 
     return () => {
-       if (scanner && scanner.getState() !== 1) { // 1 === NOT_STARTED
-        scanner.clear().catch(error => {
+       if (qrScanner && qrScanner.getState() !== 1) { // 1 === NOT_STARTED
+        qrScanner.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });
       }
     };
-  }, [handleAnalysis]);
+  }, [handleAnalysis, scanner]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -106,9 +109,11 @@ export function QRCodeScannerClient() {
   };
 
   const handleRescan = () => {
-      // This is a bit of a hack. The library doesn't expose a simple way to resume.
-      // Reloading the component is the most reliable way to re-trigger the scanner.
-      window.location.reload();
+    setResult(null);
+    setErrorInfo(null);
+    if (scanner && scanner.getState() !== 2) { // 2 === SCANNING
+        scanner.resume();
+    }
   }
 
   return (
