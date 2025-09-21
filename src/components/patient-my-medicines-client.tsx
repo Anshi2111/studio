@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { QRCodeAddMedicineClient } from './qrcode-add-medicine-client';
+import { MedicineCabinetClient } from '@/components/medicine-cabinet-client';
 
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
