@@ -153,7 +153,7 @@ export function QRCodeScannerClient() {
                     {errorInfo.qrCode && (
                        <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                            <Search className="h-4 w-4" />
-                           Search for this code online
+                           Search for this code on Google
                        </Link>
                     )}
                   </AlertDescription>
