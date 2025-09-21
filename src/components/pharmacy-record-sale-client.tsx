@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Upload, Database } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Upload, Database, Search } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
+import Link from 'next/link';
 
 const SALES_RECORDS_KEY = 'healthure-sales-records';
 const PATIENT_DATABASE_KEY = 'healthure-patient-database';
@@ -20,7 +21,7 @@ export function RecordSaleClient() {
   const [isFetching, startFetchTransition] = useTransition();
   
   const [scannedMedicine, setScannedMedicine] = useState<MedicineDetailsOutput | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isManualEntry, setIsManualEntry] = useState(false);
@@ -40,7 +41,7 @@ export function RecordSaleClient() {
   };
   
   const handleBarcodeScanned = useCallback((qrCode: string) => {
-    setError(null);
+    setErrorInfo(null);
     setScannedMedicine(null);
     resetForm();
 
@@ -54,7 +55,7 @@ export function RecordSaleClient() {
             });
         } else {
             const errorMessage = response.error || 'Medicine not found in any database.';
-            setError(errorMessage);
+            setErrorInfo({ message: errorMessage, qrCode: response.qrCode });
             toast({
                 variant: "destructive",
                 title: "Medicine Not Found",
@@ -102,7 +103,7 @@ export function RecordSaleClient() {
 
   const handleRescan = () => {
       setScannedMedicine(null);
-      setError(null);
+      setErrorInfo(null);
       setIsManualEntry(false);
       resetForm();
   }
@@ -180,11 +181,19 @@ export function RecordSaleClient() {
                 </div>
             )}
 
-            {error && !scannedMedicine && (
+            {errorInfo && !scannedMedicine && (
                 <Alert variant="destructive" className="mt-4">
                     <ServerCrash className="h-4 w-4" />
                     <AlertTitle>Scan Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
+                     <AlertDescription>
+                        {errorInfo.message}
+                        {errorInfo.qrCode && (
+                           <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
+                               <Search className="h-4 w-4" />
+                               Search for this code on Google
+                           </Link>
+                        )}
+                    </AlertDescription>
                 </Alert>
             )}
             {isManualEntry && !scannedMedicine && !isFetching && (
@@ -207,7 +216,7 @@ export function RecordSaleClient() {
                 <ScanLine className="mr-2 h-4 w-4" />
                 {scannedMedicine || isManualEntry ? 'New Sale' : 'Scanning...'}
             </Button>
-             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setError(null); setScannedMedicine(null); }} disabled={isFetching}>
+             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); }} disabled={isFetching}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>

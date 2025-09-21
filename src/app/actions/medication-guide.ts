@@ -56,15 +56,16 @@ export async function fetchMedicineDetails(input: MedicineDetailsInput): Promise
   success: boolean;
   data?: MedicineDetailsOutput;
   error?: string;
+  qrCode?: string;
 }> {
   try {
     const result = await getMedicineDetails(input);
     if (!result) {
-      return { success: false, error: 'Medicine not found in any database.' };
+      return { success: false, error: 'Medicine not found in any database.', qrCode: input.qrCode };
     }
     return { success: true, data: result };
   } catch (error) {
     console.error('Error in get medicine details flow:', error);
-    return { success: false, error: 'Failed to fetch medicine details. Please try again.' };
+    return { success: false, error: 'Failed to fetch medicine details. Please try again.', qrCode: input.qrCode };
   }
 }

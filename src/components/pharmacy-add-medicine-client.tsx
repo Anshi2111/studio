@@ -4,11 +4,12 @@ import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud, Search } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
+import Link from 'next/link';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
@@ -30,11 +31,13 @@ export function AddMedicineClient() {
   const [supplier, setSupplier] = useState('');
   const [qrCode, setQrCode] = useState('');
   const [source, setSource] = useState<'firestore' | 'public_api' | 'manual' | null>(null);
+  const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
 
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
     setQrCode(decodedText);
     setIsFormVisible(true);
+    setErrorInfo(null);
 
     startFetchTransition(async () => {
         const response = await fetchMedicineDetails({ qrCode: decodedText });
@@ -53,6 +56,7 @@ export function AddMedicineClient() {
             });
         } else {
             setSource('manual');
+            setErrorInfo({ message: response.error || "Medicine not found.", qrCode: response.qrCode });
             toast({
                 variant: 'default',
                 title: "New Medicine Detected",
@@ -105,6 +109,7 @@ export function AddMedicineClient() {
       setSupplier('');
       setQrCode('');
       setSource(null);
+      setErrorInfo(null);
   }
 
   const handleClear = () => {
@@ -237,10 +242,23 @@ export function AddMedicineClient() {
             </CardFooter>
           </Card>
            <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <Info className="h-10 w-10" />
-                    <p className="font-medium">Please fill out all fields to add the medicine to your inventory.</p>
-                </div>
+                {errorInfo ? (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Info className="h-10 w-10 text-destructive" />
+                        <p className="font-medium">{errorInfo.message}</p>
+                        {errorInfo.qrCode && (
+                            <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline text-primary">
+                               <Search className="h-4 w-4" />
+                               Search for this code on Google
+                           </Link>
+                        )}
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Info className="h-10 w-10" />
+                        <p className="font-medium">Please fill out all fields to add the medicine to your inventory.</p>
+                    </div>
+                )}
             </div>
         </>
       )}
