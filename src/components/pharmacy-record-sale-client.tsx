@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Search } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ export function RecordSaleClient() {
   const [scannedMedicine, setScannedMedicine] = useState<MedicineDetailsOutput | null>(null);
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
 
@@ -48,10 +48,7 @@ export function RecordSaleClient() {
         const response = await fetchMedicineDetails({ qrCode });
         if (response.success && response.data) {
             setScannedMedicine(response.data);
-            setIsManualEntry(false); // Ensure we are out of manual mode
-            if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop();
-            }
+            setIsManualEntry(false);
             toast({
                 title: "Medicine Found!",
                 description: `${response.data.name} is ready to be sold.`,
@@ -69,31 +66,27 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (scannedMedicine || isManualEntry) {
-        if(scannerRef.current?.isScanning) {
-            scannerRef.current.stop();
-        }
-        return;
-    };
+    if (scannedMedicine || isManualEntry || document.getElementById('sale-reader')?.innerHTML !== "") return;
 
-    const scanner = new Html5Qrcode('reader');
-    scannerRef.current = scanner;
+    const scanner = new Html5QrcodeScanner(
+      'sale-reader',
+      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+      false
+    );
 
-    const onScanSuccess = (decodedText: string) => {
+    function onScanSuccess(decodedText: string) {
+        scanner.clear();
         handleBarcodeScanned(decodedText);
-    };
-
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, (err) => {})
-      .catch(err => {
-        // This might fail if the component unmounts, it's okay.
-      });
+    }
     
+    scanner.render(onScanSuccess, undefined);
+
     return () => {
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            scannerRef.current.stop().catch(error => {
-                console.error("Failed to clear html5QrcodeScanner.", error);
-            });
-        }
+      if (scanner && scanner.getState() !== 1) {
+          scanner.clear().catch(error => {
+              console.error("Failed to clear sale scanner.", error);
+          });
+      }
     };
   }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
 
@@ -171,7 +164,7 @@ export function RecordSaleClient() {
         </CardHeader>
         <CardContent className="relative">
             {!scannedMedicine && !isManualEntry && (
-              <div id="reader" className="w-full aspect-square bg-gray-100 rounded-md"></div>
+              <div id="sale-reader" className="w-full"></div>
             )}
             
             {isFetching && (

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud, Search, ScanLine } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import Link from 'next/link';
 
@@ -17,10 +17,9 @@ export function AddMedicineClient() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isFetching, startFetchTransition] = useTransition();
   
-  const [isScannerVisible, setIsScannerVisible] = useState(true);
+  const [showScanner, setShowScanner] = useState(true);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-
+  
   // Form state
   const [name, setName] = useState('');
   const [batchNo, setBatchNo] = useState('');
@@ -33,8 +32,8 @@ export function AddMedicineClient() {
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
+    setShowScanner(false);
     setQrCode(decodedText);
-    setIsScannerVisible(false); // Hide scanner and show form
     setErrorInfo(null);
 
     startFetchTransition(async () => {
@@ -65,31 +64,28 @@ export function AddMedicineClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (!isScannerVisible) {
-        if (scannerRef.current?.isScanning) {
-            scannerRef.current.stop();
-        }
-        return;
-    };
+    if (!showScanner || document.getElementById('reader')?.innerHTML !== "") return;
 
-    const scanner = new Html5Qrcode('reader');
-    scannerRef.current = scanner;
+    const scanner = new Html5QrcodeScanner(
+      'reader',
+      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+      false
+    );
 
-    const onScanSuccess = (decodedText: string) => {
-        handleBarcodeDetection(decodedText);
-    };
+    function onScanSuccess(decodedText: string, decodedResult: any) {
+      scanner.clear();
+      handleBarcodeDetection(decodedText);
+    }
 
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, (err) => {})
-      .catch((err) => {
-        console.error("Scanner start failed", err);
-      });
+    scanner.render(onScanSuccess, undefined);
 
     return () => {
-        if (scannerRef.current && scannerRef.current.isScanning) {
-            scannerRef.current.stop().catch(error => console.error("Failed to stop scanner", error));
-        }
+      // Cleanup scanner on component unmount if it's still active
+      if (scanner && scanner.getState() !== 1) { // 1 is NOT_STARTED
+        scanner.clear().catch(err => console.error("Scanner clear failed", err));
+      }
     };
-  }, [isScannerVisible, handleBarcodeDetection]);
+  }, [showScanner, handleBarcodeDetection]);
   
 
   const resetForm = () => {
@@ -106,7 +102,7 @@ export function AddMedicineClient() {
 
   const handleClear = () => {
     resetForm();
-    setIsScannerVisible(true);
+    setShowScanner(true);
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item.",
@@ -132,7 +128,7 @@ export function AddMedicineClient() {
   }
   
   const handleManualEntry = () => {
-    setIsScannerVisible(false);
+    setShowScanner(false);
     setSource('manual');
   }
 
@@ -140,7 +136,7 @@ export function AddMedicineClient() {
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      {isScannerVisible && (
+      {showScanner && (
         <Card className="shadow-lg md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-headline">
@@ -152,7 +148,7 @@ export function AddMedicineClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
-            <div id="reader" className="w-full aspect-square bg-gray-100 rounded-md"></div>
+            <div id="reader" className="w-full"></div>
           </CardContent>
            <CardFooter className="grid grid-cols-1 gap-2">
             <Button variant="outline" className="w-full" onClick={handleManualEntry}>
@@ -163,7 +159,7 @@ export function AddMedicineClient() {
         </Card>
       )}
 
-      {!isScannerVisible && (
+      {!showScanner && (
         <>
           <Card className="shadow-lg">
             <CardHeader>
