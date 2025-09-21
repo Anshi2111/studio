@@ -14,12 +14,13 @@ import {
 import { Logo } from '@/components/logo';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, BookHeart, LayoutDashboard, History } from 'lucide-react';
+import { Calendar, BookHeart, LayoutDashboard, History, Pill } from 'lucide-react';
 import { DashboardHeader } from '@/components/dashboard/header';
 
 const menuItems = [
   { href: '/patient/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/patient/appointments', label: 'Appointments', icon: Calendar },
+  { href: '/patient/my-medicines', label: 'My Medicines', icon: Pill },
   { href: '/patient/medication-guide', label: 'Medication Guide', icon: BookHeart },
   { href: '/patient/my-records', label: 'My Records', icon: History },
 ];

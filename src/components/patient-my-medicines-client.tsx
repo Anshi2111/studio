@@ -163,7 +163,7 @@ export function MyMedicinesClient() {
             title: "Medicine Added!",
             description: `${data.name} was added to your medicines via QR scan.`,
         });
-    }, [toast]);
+    }, []);
 
 
     const filteredMedicines = medicines.filter(med => 

@@ -1,6 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pill, History, Bell } from 'lucide-react';
-import { MyMedicinesClient } from "@/components/patient-my-medicines-client";
+import { History, Bell } from 'lucide-react';
 import { MedicalHistoryClient } from "@/components/patient-medical-history-client";
 import { RemindersClient } from "@/components/patient-reminders-client";
 
@@ -13,15 +12,11 @@ export default function MyRecordsPage() {
                 </h1>
             </div>
             <p className="text-muted-foreground mb-6">
-                View your medications, track your medical history, and manage reminders.
+                Track your medical history and manage reminders.
             </p>
 
-            <Tabs defaultValue="my-medicines" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="my-medicines">
-                        <Pill className="mr-2 h-4 w-4" />
-                        My Medicines
-                    </TabsTrigger>
+            <Tabs defaultValue="medical-history" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="medical-history">
                         <History className="mr-2 h-4 w-4" />
                         Medical History
@@ -31,9 +26,6 @@ export default function MyRecordsPage() {
                         Reminders
                     </TabsTrigger>
                 </TabsList>
-                <TabsContent value="my-medicines">
-                    <MyMedicinesClient />
-                </TabsContent>
                 <TabsContent value="medical-history">
                      <MedicalHistoryClient />
                 </TabsContent>
