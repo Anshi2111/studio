@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { Badge } from './ui/badge';
 
 
-const HISTORY_STORAGE_KEY = 'healthure-medical-history';
+export const HISTORY_STORAGE_KEY = 'healthure-medical-history';
 
 interface HistoryEntry {
     id: string;
@@ -104,7 +104,7 @@ function FileInputButton({ label, onFileChange, selectedFileName, onClear, icon 
     );
 }
 
-export function MedicalHistoryClient() {
+export function HealthRecordClient() {
     const [history, setHistory] = useState<HistoryEntry[]>([]);
     const [formState, setFormState] = useState<Omit<HistoryEntry, 'id'>>(defaultEntry);
     const [isAdding, setIsAdding] = useState(false);
@@ -195,7 +195,7 @@ export function MedicalHistoryClient() {
         return (
              <Card>
                 <CardHeader>
-                    <CardTitle>Add New Medical Entry</CardTitle>
+                    <CardTitle>Add New Health Record</CardTitle>
                     <CardDescription>Fill out the details below to add a new record to your timeline.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -331,12 +331,12 @@ export function MedicalHistoryClient() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Medical History</CardTitle>
+                    <CardTitle>Health Record</CardTitle>
                     <CardDescription>A timeline of your past diagnoses, prescriptions, and doctor visits.</CardDescription>
                 </div>
                 <Button onClick={() => setIsAdding(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Entry
+                    Add New Record
                 </Button>
             </CardHeader>
             <CardContent>
@@ -366,7 +366,7 @@ export function MedicalHistoryClient() {
                                             {(entry.prescriptionImageName || entry.labReportName) && (
                                                 <div className="text-sm space-y-2">
                                                     <strong className="block text-foreground">Attachments</strong>
-                                                    {entry.prescriptionImageName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.prescriptionImageName}</span></div>}
+                                                    {entry.prescriptionImageName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.prescriptionImagename}</span></div>}
                                                     {entry.labReportName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.labReportName}</span></div>}
                                                 </div>
                                             )}
@@ -388,12 +388,10 @@ export function MedicalHistoryClient() {
                             ))}
                         </Accordion>
                     ) : (
-                        <p className="text-center text-muted-foreground py-8">No history recorded yet. Click "Add New Entry" to begin.</p>
+                        <p className="text-center text-muted-foreground py-8">No health records yet. Click "Add New Record" to begin.</p>
                     )}
                 </div>
             </CardContent>
         </Card>
     );
 }
-
-    
