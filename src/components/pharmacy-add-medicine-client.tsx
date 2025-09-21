@@ -17,9 +17,7 @@ export function AddMedicineClient() {
   const [isManualEntry, setIsManualEntry] = useState(false);
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Form state
   const [medName, setMedName] = useState('');
@@ -31,7 +29,6 @@ export function AddMedicineClient() {
   const [barcode, setBarcode] = useState('');
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
-    setIsScanning(false);
     setBarcode(decodedText);
 
     const inventory = JSON.parse(localStorage.getItem(MOCK_INVENTORY_KEY) || '[]');
@@ -78,20 +75,6 @@ export function AddMedicineClient() {
 
     function onScanSuccess(decodedText: string) {
         scanner.pause();
-        
-        if (videoRef.current) {
-            const canvas = document.createElement('canvas');
-            canvas.width = videoRef.current.videoWidth;
-            canvas.height = videoRef.current.videoHeight;
-            const context = canvas.getContext('2d');
-            if (context) {
-                context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-                // The handleBarcodeDetection expects the decoded text, not the image
-                handleBarcodeDetection(decodedText);
-                return;
-            }
-        }
-        // Fallback if video snapshot fails or not available
         handleBarcodeDetection(decodedText);
     }
 
@@ -100,13 +83,7 @@ export function AddMedicineClient() {
     }
     
     if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure).then(() => {
-            const videoElement = document.querySelector('#reader video');
-            if(videoElement) {
-               videoRef.current = videoElement as HTMLVideoElement;
-            }
-        });
-        setIsScanning(true);
+        scanner.render(onScanSuccess, onScanFailure);
     }
 
     return () => {
@@ -186,7 +163,6 @@ export function AddMedicineClient() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Use Html5Qrcode for file scanning as it's more direct
       const html5QrCode = new Html5Qrcode( "reader", false);
       html5QrCode.scanFile(file, true)
         .then(decodedText => {

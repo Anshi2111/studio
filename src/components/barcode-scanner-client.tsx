@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Volume2, Upload } from 'lucide-react';
 import type { QRCodeMedicationInfoOutput } from '@/ai/flows/qrcode-medication-info';
 import { getQRCodeInfo } from '@/app/actions/medication-guide';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Input } from './ui/input';
 
 export function QRCodeScannerClient() {
@@ -34,6 +34,7 @@ export function QRCodeScannerClient() {
       },
       /* verbose= */ false
     );
+    scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
         setIsScanning(false);
@@ -47,7 +48,6 @@ export function QRCodeScannerClient() {
     
     if (document.getElementById('reader')?.innerHTML === "") {
         scanner.render(onScanSuccess, onScanFailure);
-        scannerRef.current = scanner;
         setIsScanning(scanner.isScanning);
     }
 
@@ -62,8 +62,6 @@ export function QRCodeScannerClient() {
   }, []);
 
   const handleCodeScanned = (scannedCode: string) => {
-    // This function creates a visual representation of the scanned code.
-    // This is useful when the QR code just contains text, like a serial number.
     const canvas = document.createElement('canvas');
     canvas.width = 400;
     canvas.height = 100;

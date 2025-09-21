@@ -24,7 +24,6 @@ export function RecordSaleClient() {
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
@@ -90,19 +89,6 @@ export function RecordSaleClient() {
     function onScanSuccess(decodedText: string, decodedResult: any) {
         if (scannerRef.current?.isScanning) {
             scanner.pause();
-            
-            if (videoRef.current) {
-                const canvas = document.createElement('canvas');
-                canvas.width = videoRef.current.videoWidth;
-                canvas.height = videoRef.current.videoHeight;
-                const context = canvas.getContext('2d');
-                if (context) {
-                    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-                    handleBarcodeScanned(decodedText);
-                    return;
-                }
-            }
-            // Fallback
             handleBarcodeScanned(decodedText);
         }
     }
@@ -112,12 +98,7 @@ export function RecordSaleClient() {
     }
 
     if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure).then(() => {
-            const videoElement = document.querySelector('#reader video');
-            if(videoElement) {
-               videoRef.current = videoElement as HTMLVideoElement;
-            }
-       });
+       scanner.render(onScanSuccess, onScanFailure);
         scannerRef.current = scanner;
     }
     
@@ -155,7 +136,6 @@ export function RecordSaleClient() {
     if (!scannedMedicine) return;
 
     startSaveTransition(() => {
-        // --- Patient Account Linking Logic ---
         const patients = JSON.parse(localStorage.getItem(PATIENT_DATABASE_KEY) || '[]');
         let patientRecord = patients.find((p: any) => p.phone === patientPhone);
 
@@ -163,7 +143,7 @@ export function RecordSaleClient() {
             patientRecord = {
                 phone: patientPhone,
                 email: patientEmail,
-                name: `Patient ${patientPhone.slice(-4)}`, // Create a default name
+                name: `Patient ${patientPhone.slice(-4)}`, 
                 createdAt: new Date().toISOString(),
             };
             patients.push(patientRecord);
@@ -172,11 +152,9 @@ export function RecordSaleClient() {
                 description: `A new patient record has been created for phone number ${patientPhone}.`,
             });
         } else if (patientEmail && !patientRecord.email) {
-            // Update existing patient record with email if it's missing
             patientRecord.email = patientEmail;
         }
         localStorage.setItem(PATIENT_DATABASE_KEY, JSON.stringify(patients));
-        // --- End Logic ---
 
         const salesRecords = JSON.parse(localStorage.getItem(SALES_RECORDS_KEY) || '[]');
         
@@ -199,7 +177,6 @@ export function RecordSaleClient() {
             description: `Sale of ${scannedMedicine.name} to ${patientPhone} has been logged.`,
         });
 
-        // In a real app, you would also update the inventory quantity here.
 
         handleRescan();
     });
