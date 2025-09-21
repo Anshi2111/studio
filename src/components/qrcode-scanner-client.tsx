@@ -42,6 +42,8 @@ export function QRCodeScannerClient() {
   }, [toast]);
   
   const handleCodeScanned = useCallback((scannedCode: string) => {
+    // This is a dummy function now, the real logic is in the scanner setup
+    // We can use it to create an image from the video feed
     if (videoRef.current) {
         const canvas = document.createElement('canvas');
         canvas.width = videoRef.current.videoWidth;
@@ -75,6 +77,7 @@ export function QRCodeScannerClient() {
       },
       /* verbose= */ false
     );
+    scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
         setIsScanning(false);
@@ -93,13 +96,12 @@ export function QRCodeScannerClient() {
                 videoRef.current = videoElement as HTMLVideoElement;
              }
         });
-        scannerRef.current = scanner;
         setIsScanning(scanner.isScanning);
     }
 
 
     return () => {
-      if (scannerRef.current && scannerRef.current.getState() === 2) { // SCANNING
+      if (scannerRef.current) {
         scannerRef.current.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });

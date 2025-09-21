@@ -87,7 +87,7 @@ export function AddMedicineClient() {
     }
 
     return () => {
-      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
+      if (scannerRef.current) {
         scannerRef.current.clear().catch(error => {
           console.error("Failed to clear html5QrcodeScanner.", error);
         });

@@ -85,6 +85,7 @@ export function RecordSaleClient() {
       },
       /* verbose= */ false
     );
+    scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string, decodedResult: any) {
         if (scannerRef.current?.isScanning) {
@@ -99,15 +100,14 @@ export function RecordSaleClient() {
 
     if (document.getElementById('reader')?.innerHTML === "") {
        scanner.render(onScanSuccess, onScanFailure);
-        scannerRef.current = scanner;
     }
     
     return () => {
-      if (scannerRef.current && scannerRef.current.getState() === 2) { // 2 is SCANNING state
-        scannerRef.current.clear().catch(error => {
-            console.error("Failed to clear html5QrcodeScanner.", error);
-        });
-      }
+        if (scannerRef.current) {
+            scannerRef.current.clear().catch(error => {
+                console.error("Failed to clear html5QrcodeScanner.", error);
+            });
+        }
     };
   }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
 
