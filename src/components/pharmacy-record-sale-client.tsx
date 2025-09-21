@@ -24,7 +24,7 @@ export function RecordSaleClient() {
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
   
-  const [isManualEntry, setIsManualEntry] = useState(false);
+  const [mode, setMode] = useState<'scanning' | 'manual'>('scanning');
   const [manualBarcode, setManualBarcode] = useState('');
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
@@ -50,8 +50,8 @@ export function RecordSaleClient() {
         const response = await fetchMedicineDetails({ qrCode });
         if (response.success && response.data) {
             setScannedMedicine(response.data);
-            setIsManualEntry(false);
-             if (scannerRef.current) {
+            setMode('scanning'); // Return to scanning mode visually but with data loaded
+            if (scannerRef.current) {
               scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
               scannerRef.current = null;
             }
@@ -62,6 +62,7 @@ export function RecordSaleClient() {
         } else {
             const errorMessage = response.error || 'Medicine not found in any database.';
             setErrorInfo({ message: errorMessage, qrCode: response.qrCode });
+            setScannedMedicine(null);
             toast({
                 variant: "destructive",
                 title: "Medicine Not Found",
@@ -70,27 +71,26 @@ export function RecordSaleClient() {
         }
     });
   }, [toast]);
+  
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+    }
+    handleBarcodeScanned(decodedText);
+  }, [handleBarcodeScanned]);
+
 
   useEffect(() => {
-    if (isManualEntry || scannedMedicine || document.getElementById('sale-reader')?.innerHTML !== '' || scannerRef.current) return;
-
-    const qrScanner = new Html5QrcodeScanner(
-      'sale-reader',
-      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
-      false
-    );
-
-    function onScanSuccess(decodedText: string) {
-        if (qrScanner.getState() === 2) { // SCANNING
-            qrScanner.clear();
-            scannerRef.current = null;
-            handleBarcodeScanned(decodedText);
-        }
+    if (mode === 'scanning' && !scannedMedicine && !scannerRef.current && document.getElementById('sale-reader')) {
+      const qrScanner = new Html5QrcodeScanner(
+        'sale-reader',
+        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+        false
+      );
+      qrScanner.render(onScanSuccess, undefined);
+      scannerRef.current = qrScanner;
     }
-    
-    qrScanner.render(onScanSuccess, undefined);
-    scannerRef.current = qrScanner;
-
 
     return () => {
       if (scannerRef.current) {
@@ -100,13 +100,13 @@ export function RecordSaleClient() {
           scannerRef.current = null;
       }
     };
-  }, [isManualEntry, scannedMedicine, handleBarcodeScanned]);
+  }, [mode, scannedMedicine, onScanSuccess]);
 
 
-  const handleRescan = () => {
+  const handleNewSale = () => {
       setScannedMedicine(null);
       setErrorInfo(null);
-      setIsManualEntry(false);
+      setMode('scanning');
       resetForm();
   }
   
@@ -156,14 +156,14 @@ export function RecordSaleClient() {
         });
 
 
-        handleRescan();
+        handleNewSale();
     });
   };
 
   const isFormValid = patientPhone && quantity && parseInt(quantity) > 0;
 
   const handleToggleManual = () => {
-    setIsManualEntry(prev => !prev); 
+    setMode(prev => prev === 'manual' ? 'scanning' : 'manual');
     setErrorInfo(null); 
     setScannedMedicine(null); 
     resetForm(); 
@@ -172,6 +172,8 @@ export function RecordSaleClient() {
       scannerRef.current = null;
     }
   }
+
+  const showScanner = mode === 'scanning' && !scannedMedicine;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -182,11 +184,11 @@ export function RecordSaleClient() {
             Scan Medicine to Sell
           </CardTitle>
           <CardDescription>
-            Scan, upload, or enter the QR code manually.
+            Scan or enter the QR code manually.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            {!scannedMedicine && !isManualEntry && (
+            {showScanner && (
               <div id="sale-reader" className="w-full"></div>
             )}
             
@@ -211,7 +213,7 @@ export function RecordSaleClient() {
                     </AlertDescription>
                 </Alert>
             )}
-            {isManualEntry && !scannedMedicine && !isFetching && (
+            {mode === 'manual' && !scannedMedicine && !isFetching && (
                 <div className="space-y-4">
                     <Label htmlFor="manual-barcode">QR Code Value</Label>
                     <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter QR code..."/>
@@ -226,15 +228,18 @@ export function RecordSaleClient() {
                 </Alert>
             )}
         </CardContent>
-        <CardFooter className="grid gap-2 grid-cols-2">
-            <Button onClick={handleRescan} className="w-full" variant="outline" disabled={isFetching}>
-                <ScanLine className="mr-2 h-4 w-4" />
-                New Sale
-            </Button>
-             <Button variant="secondary" className="w-full" onClick={handleToggleManual} disabled={isFetching}>
-                <Keyboard className="mr-2 h-4 w-4" />
-                {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
-            </Button>
+        <CardFooter className="grid gap-2 grid-cols-1">
+            {!showScanner ? (
+                 <Button onClick={handleNewSale} className="w-full" variant="outline" disabled={isFetching}>
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    New Sale
+                </Button>
+            ) : (
+                <Button variant="secondary" className="w-full" onClick={handleToggleManual} disabled={isFetching}>
+                    <Keyboard className="mr-2 h-4 w-4" />
+                    {mode === 'manual' ? 'Use Scanner' : 'Enter Manually'}
+                </Button>
+            )}
         </CardFooter>
       </Card>
 

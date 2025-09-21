@@ -45,34 +45,33 @@ export function QRCodeScannerClient() {
     });
   }, [toast]);
 
-  useEffect(() => {
-    // Prevents double-rendering in strict mode
-    if (scannerRef.current) {
-        return;
-    }
-
-    const qrScanner = new Html5QrcodeScanner(
-      'reader',
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-        rememberLastUsedCamera: true,
-      },
-      /* verbose= */ false
-    );
-    
-    function onScanSuccess(decodedText: string) {
-      if (qrScanner.getState() === 2) { // 2 === SCANNING
-        qrScanner.pause(true);
-        handleAnalysis(decodedText);
+  const onScanSuccess = useCallback((decodedText: string) => {
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
       }
-    }
+      handleAnalysis(decodedText);
+  }, [handleAnalysis]);
 
-    qrScanner.render(onScanSuccess, undefined);
-    scannerRef.current = qrScanner;
+
+  useEffect(() => {
+    if (!scannerRef.current && document.getElementById('reader')) {
+      const qrScanner = new Html5QrcodeScanner(
+        'reader',
+        {
+          qrbox: {
+            width: 250,
+            height: 250,
+          },
+          fps: 5,
+          rememberLastUsedCamera: true,
+        },
+        /* verbose= */ false
+      );
+      
+      qrScanner.render(onScanSuccess, undefined);
+      scannerRef.current = qrScanner;
+    }
 
     return () => {
        if (scannerRef.current) {
@@ -82,18 +81,20 @@ export function QRCodeScannerClient() {
         scannerRef.current = null;
       }
     };
-  }, [handleAnalysis]);
+  }, [onScanSuccess]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const html5QrCode = new Html5Qrcode("reader");
+    if (scannerRef.current) {
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+
+    const html5QrCode = new Html5Qrcode("reader-placeholder", false);
     html5QrCode.scanFile(file, true)
         .then(decodedText => {
-            if(scannerRef.current) {
-                scannerRef.current.pause(true);
-            }
             handleAnalysis(decodedText);
         })
         .catch(err => {
@@ -108,10 +109,9 @@ export function QRCodeScannerClient() {
   const handleRescan = () => {
     setResult(null);
     setErrorInfo(null);
-    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
-        scannerRef.current.resume();
-    }
   }
+
+  const showScanner = !result && !errorInfo;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -126,7 +126,12 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="reader" className="w-full"></div>
+            {showScanner ? (
+              <div id="reader" className="w-full"></div>
+            ) : (
+              <div id="reader-placeholder" className="hidden"></div>
+            )}
+
              {errorInfo && (
                 <Alert variant="destructive" className="mt-4">
                   <AlertTitle>Scan Failed</AlertTitle>
@@ -143,11 +148,13 @@ export function QRCodeScannerClient() {
               )}
         </CardContent>
          <CardFooter className="grid grid-cols-2 gap-2">
-            <Button onClick={handleRescan} disabled={isPending || (!result && !errorInfo)}>
-                <ScanLine className="mr-2 h-4 w-4" />
-                Scan Again
-            </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            {!showScanner && (
+              <Button onClick={handleRescan} disabled={isPending}>
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  Scan Again
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={showScanner ? 'col-span-2' : ''}>
               <Upload className="mr-2 h-4 w-4" />
               Upload QR Code
             </Button>
@@ -194,6 +201,7 @@ export function QRCodeScannerClient() {
             </CardContent>
           </Card>
         )}
+
         {!isPending && !result && !errorInfo && (
              <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">

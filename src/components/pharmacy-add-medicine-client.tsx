@@ -17,8 +17,9 @@ export function AddMedicineClient() {
   const [isSaving, startSaveTransition] = useTransition();
   const [isFetching, startFetchTransition] = useTransition();
   
-  const [showScanner, setShowScanner] = useState(true);
   const { toast } = useToast();
+
+  const [mode, setMode] = useState<'scanning' | 'manual' | 'details'>('scanning');
   
   // Form state
   const [name, setName] = useState('');
@@ -33,9 +34,9 @@ export function AddMedicineClient() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
-    setShowScanner(false);
     setQrCode(decodedText);
     setErrorInfo(null);
+    setMode('details');
 
     startFetchTransition(async () => {
         const response = await fetchMedicineDetails({ qrCode: decodedText });
@@ -64,28 +65,25 @@ export function AddMedicineClient() {
         }
     });
   }, [toast]);
+  
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (scannerRef.current) {
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+    handleBarcodeDetection(decodedText);
+  }, [handleBarcodeDetection]);
 
   useEffect(() => {
-    if (!showScanner || document.getElementById('reader')?.innerHTML !== "" || scannerRef.current) {
-        return;
+    if (mode === 'scanning' && !scannerRef.current && document.getElementById('reader')) {
+      const qrScanner = new Html5QrcodeScanner(
+        'reader',
+        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+        false
+      );
+      qrScanner.render(onScanSuccess, undefined);
+      scannerRef.current = qrScanner;
     }
-
-    const qrScanner = new Html5QrcodeScanner(
-      'reader',
-      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
-      false
-    );
-
-    function onScanSuccess(decodedText: string, decodedResult: any) {
-      if (qrScanner.getState() === 2) {
-          qrScanner.clear();
-          scannerRef.current = null;
-          handleBarcodeDetection(decodedText);
-      }
-    }
-
-    qrScanner.render(onScanSuccess, undefined);
-    scannerRef.current = qrScanner;
 
     return () => {
       if (scannerRef.current) {
@@ -93,7 +91,7 @@ export function AddMedicineClient() {
         scannerRef.current = null;
       }
     };
-  }, [showScanner, handleBarcodeDetection]);
+  }, [mode, onScanSuccess]);
   
 
   const resetForm = () => {
@@ -108,11 +106,11 @@ export function AddMedicineClient() {
       setErrorInfo(null);
   }
 
-  const handleClear = () => {
+  const handleNewScan = () => {
     resetForm();
-    setShowScanner(true);
+    setMode('scanning');
     toast({
-        title: "Form Cleared",
+        title: "Ready to Scan",
         description: "You can now scan a new item.",
     });
   };
@@ -131,24 +129,15 @@ export function AddMedicineClient() {
               title: "Medicine Added!",
               description: `${name} has been successfully added to your inventory.`,
           });
-          handleClear();
+          handleNewScan();
       });
   }
   
-  const handleManualEntry = () => {
-    setShowScanner(false);
-    setSource('manual');
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
-      scannerRef.current = null;
-    }
-  }
-
   const isFormValid = name && batchNo && mfgDate && expDate && quantity && supplier && qrCode;
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      {showScanner && (
+      {mode === 'scanning' ? (
         <Card className="shadow-lg md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl font-headline">
@@ -156,22 +145,20 @@ export function AddMedicineClient() {
               Scan QR Code
             </CardTitle>
             <CardDescription>
-              Place a medicine's QR code in the viewfinder, or enter it manually.
+              Place a medicine's QR code in the viewfinder.
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
             <div id="reader" className="w-full"></div>
           </CardContent>
            <CardFooter className="grid grid-cols-1 gap-2">
-            <Button variant="outline" className="w-full" onClick={handleManualEntry}>
+            <Button variant="outline" className="w-full" onClick={() => setMode('manual')}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 Enter Details Manually
             </Button>
            </CardFooter>
         </Card>
-      )}
-
-      {!showScanner && (
+      ) : (
         <>
           <Card className="shadow-lg">
             <CardHeader>
@@ -193,11 +180,17 @@ export function AddMedicineClient() {
                 <div className="space-y-1">
                     <Label htmlFor="barcode">QR Code</Label>
                      <div className="flex items-center gap-2">
-                        <Input id="barcode" value={qrCode} onChange={(e) => setQrCode(e.target.value)} disabled={source !== 'manual'} />
+                        <Input id="barcode" value={qrCode} onChange={(e) => setQrCode(e.target.value)} disabled={mode !== 'manual'} />
                         {source === 'firestore' && <Database className="h-5 w-5 text-green-500" title="From your database"/>}
                         {source === 'public_api' && <Cloud className="h-5 w-5 text-blue-500" title="From public source"/>}
                     </div>
                 </div>
+                 {mode === 'manual' && !name && (
+                    <Button className="w-full" onClick={() => handleBarcodeDetection(qrCode)} disabled={!qrCode || isFetching}>
+                      <Search className="mr-2 h-4 w-4" />
+                      Find Medicine by QR Code
+                    </Button>
+                  )}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <Label htmlFor="med-name">Medicine Name</Label>
@@ -235,9 +228,9 @@ export function AddMedicineClient() {
                 <Button onClick={handleSaveMedicine} disabled={isSaving || isFetching || !isFormValid} className="w-full">
                     {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add to Inventory</>}
                 </Button>
-                <Button onClick={handleClear} variant="outline" disabled={isFetching}>
+                <Button onClick={handleNewScan} variant="outline" disabled={isFetching}>
                     <XCircle className="mr-2 h-4 w-4" />
-                    Clear & Rescan
+                    Clear & New Scan
                 </Button>
             </CardFooter>
           </Card>
