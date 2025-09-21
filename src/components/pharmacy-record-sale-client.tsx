@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Upload } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 const SALES_RECORDS_KEY = 'healthure-sales-records';
@@ -24,7 +24,7 @@ export function RecordSaleClient() {
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
@@ -32,7 +32,7 @@ export function RecordSaleClient() {
   const [quantity, setQuantity] = useState('');
 
   useEffect(() => {
-    if (isManualEntry) {
+    if (isManualEntry || scannedMedicine) {
         if(scannerRef.current?.isScanning) {
             scannerRef.current.clear();
         }
@@ -63,7 +63,12 @@ export function RecordSaleClient() {
     }
 
     if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure);
+        scanner.render(onScanSuccess, onScanFailure).then(() => {
+            const videoElement = document.querySelector('#reader video');
+            if(videoElement) {
+               videoRef.current = videoElement as HTMLVideoElement;
+            }
+       });
         scannerRef.current = scanner;
     }
     
@@ -74,7 +79,7 @@ export function RecordSaleClient() {
         });
       }
     };
-  }, [isManualEntry]);
+  }, [isManualEntry, scannedMedicine]);
 
   const handleBarcodeScanned = (barcode: string) => {
     setError(null);
@@ -108,7 +113,7 @@ export function RecordSaleClient() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const html5QrCode = new Html5QrcodeScanner('reader', {}, false);
+      const html5QrCode = new Html5Qrcode( "reader", false);
       html5QrCode.scanFile(file, true)
         .then(decodedText => {
             handleBarcodeScanned(decodedText);
@@ -202,7 +207,7 @@ export function RecordSaleClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            {!isManualEntry && <div id="reader" className="w-full"></div>}
+            {!scannedMedicine && !isManualEntry && <div id="reader" className="w-full"></div>}
             {error && !scannedMedicine && (
                 <Alert variant="destructive" className="mt-4">
                     <ServerCrash className="h-4 w-4" />
@@ -210,20 +215,27 @@ export function RecordSaleClient() {
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-            {isManualEntry && (
+            {isManualEntry && !scannedMedicine && (
                 <div className="space-y-4">
                     <Label htmlFor="manual-barcode">QR Code Value</Label>
                     <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter QR code..."/>
                     <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)}>Find Medicine</Button>
                 </div>
             )}
+             {scannedMedicine && (
+                <Alert>
+                    <Package className="h-4 w-4" />
+                    <AlertTitle>{scannedMedicine.name}</AlertTitle>
+                    <AlertDescription>QR Code scanned successfully. Fill in the sale details to proceed.</AlertDescription>
+                </Alert>
+            )}
         </CardContent>
         <CardFooter className="grid gap-2 grid-cols-2">
-            <Button onClick={handleRescan} className="w-full">
+            <Button onClick={handleRescan} className="w-full" variant={scannedMedicine ? "outline" : "default"}>
                 <ScanLine className="mr-2 h-4 w-4" />
                 {scannedMedicine || isManualEntry ? 'New Sale' : 'Scanning...'}
             </Button>
-             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setError(null); }}>
+             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setError(null); setScannedMedicine(null); }}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 
 const MOCK_INVENTORY_KEY = 'healthure-inventory';
 
@@ -19,7 +19,7 @@ export function AddMedicineClient() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Form state
   const [medName, setMedName] = useState('');
@@ -53,9 +53,8 @@ export function AddMedicineClient() {
     scannerRef.current = scanner;
 
     function onScanSuccess(decodedText: string) {
-      if (scannerRef.current?.isScanning) {
-        handleBarcodeDetection(decodedText, scanner);
-      }
+        scanner.pause();
+        handleBarcodeDetection(decodedText);
     }
 
     function onScanFailure(error: any) {
@@ -63,7 +62,12 @@ export function AddMedicineClient() {
     }
     
     if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure);
+        scanner.render(onScanSuccess, onScanFailure).then(() => {
+            const videoElement = document.querySelector('#reader video');
+            if(videoElement) {
+               videoRef.current = videoElement as HTMLVideoElement;
+            }
+        });
         setIsScanning(true);
     }
 
@@ -76,8 +80,7 @@ export function AddMedicineClient() {
     };
   }, [isManualEntry, scannedData]);
   
-  const handleBarcodeDetection = (decodedText: string, scanner?: Html5QrcodeScanner) => {
-    scanner?.pause();
+  const handleBarcodeDetection = (decodedText: string) => {
     setIsScanning(false);
     setBarcode(decodedText);
 
@@ -116,19 +119,7 @@ export function AddMedicineClient() {
     resetForm();
     setScannedData(null);
     setIsManualEntry(false);
-    if(scannerRef.current && scannerRef.current.getState() === 3 /*PAUSED*/) {
-        // Re-render the scanner
-        const scanner = scannerRef.current;
-         if (document.getElementById('reader')?.innerHTML !== "") {
-            document.getElementById('reader')!.innerHTML = "";
-         }
-        scanner.render( (decodedText) => {
-            if (scannerRef.current?.isScanning) {
-                handleBarcodeDetection(decodedText, scanner);
-            }
-        }, () => {});
-    }
-
+    
     toast({
         title: "Form Cleared",
         description: "You can now scan a new item or enter details manually.",
@@ -181,7 +172,8 @@ export function AddMedicineClient() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const html5QrCode = new Html5QrcodeScanner('reader', {}, false);
+      // Use Html5Qrcode for file scanning as it's more direct
+      const html5QrCode = new Html5Qrcode( "reader", false);
       html5QrCode.scanFile(file, true)
         .then(decodedText => {
             handleBarcodeDetection(decodedText);
