@@ -150,7 +150,7 @@ export function MyMedicinesClient() {
         const newMed = {
             id: `um${Date.now()}`,
             name: data.name,
-            purchaseDate: new Date().toISOString().split('T')[0], // Default to today
+            purchaseDate: new Date().toISOString().split('T')[0],
             expiryDate: data.expDate,
             source: 'Scanned' as const,
           };
