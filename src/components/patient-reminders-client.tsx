@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Bell, AlertTriangle } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { Bell } from 'lucide-react';
+import { format, differenceInDays, addDays, isBefore } from 'date-fns';
 
 const SALES_RECORDS_STORAGE_KEY = 'healthure-sales-records';
 const MED_CABINET_STORAGE_KEY = 'healthure-medicine-cabinet';
+const HISTORY_STORAGE_KEY = 'healthure-medical-history';
 const LOGGED_IN_PATIENT_PHONE = '123-456-7890'; // Mock logged-in patient
 
 interface Reminder {
@@ -21,6 +22,7 @@ export function RemindersClient() {
     const [reminders, setReminders] = useState<Reminder[]>([]);
     
     useEffect(() => {
+        // Expiry reminders
         const salesRecordsStr = localStorage.getItem(SALES_RECORDS_STORAGE_KEY);
         const salesRecords = salesRecordsStr ? JSON.parse(salesRecordsStr) : [];
         const cabinetRecordsStr = localStorage.getItem(MED_CABINET_STORAGE_KEY);
@@ -52,13 +54,34 @@ export function RemindersClient() {
             }
         });
 
-        // Mock dosage and refill reminders
-        const mockReminders: Reminder[] = [
-            { id: 'mock1', type: 'dosage', title: 'Take Lisinopril', description: 'Time for your daily dose of Lisinopril (10mg).' },
+        // Dosage reminders from medical history
+        const historyRecordsStr = localStorage.getItem(HISTORY_STORAGE_KEY);
+        const historyRecords = historyRecordsStr ? JSON.parse(historyRecordsStr) : [];
+        const dosageReminders: Reminder[] = [];
+
+        historyRecords.forEach((entry: any) => {
+            if (entry.tabletsPerDay > 0 && entry.courseDurationDays > 0) {
+                const startDate = new Date(entry.appointmentDate);
+                const endDate = addDays(startDate, entry.courseDurationDays);
+                
+                // Show reminder only if the course is currently active
+                if (isBefore(today, endDate) && !isBefore(today, startDate)) {
+                     dosageReminders.push({
+                        id: `hist_${entry.id}_dosage`,
+                        title: `Take ${entry.medicineName}`,
+                        description: `Time for your daily dose: ${entry.tabletsPerDay} tablet(s). Course ends on ${format(endDate, 'PPP')}.`,
+                        type: 'dosage'
+                    });
+                }
+            }
+        });
+
+        // Mock refill reminders
+        const mockRefillReminders: Reminder[] = [
             { id: 'mock2', type: 'refill', title: 'Refill Metformin', description: 'You have only 1 refill left for Metformin. Contact your pharmacy soon.' },
         ];
 
-        setReminders([...expiryReminders, ...mockReminders]);
+        setReminders([...expiryReminders, ...dosageReminders, ...mockRefillReminders]);
 
     }, []);
     
