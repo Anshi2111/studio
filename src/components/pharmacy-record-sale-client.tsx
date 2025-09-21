@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Upload, Database, Search } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Info, Package, PlusCircle, ServerCrash, Phone, Hash, Keyboard, Mail, Search } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
 import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
 import Link from 'next/link';
@@ -23,10 +23,9 @@ export function RecordSaleClient() {
   const [scannedMedicine, setScannedMedicine] = useState<MedicineDetailsOutput | null>(null);
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [isManualEntry, setIsManualEntry] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [patientPhone, setPatientPhone] = useState('');
@@ -49,6 +48,10 @@ export function RecordSaleClient() {
         const response = await fetchMedicineDetails({ qrCode });
         if (response.success && response.data) {
             setScannedMedicine(response.data);
+            setIsManualEntry(false); // Ensure we are out of manual mode
+            if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop();
+            }
             toast({
                 title: "Medicine Found!",
                 description: `${response.data.name} is ready to be sold.`,
@@ -66,34 +69,28 @@ export function RecordSaleClient() {
   }, [toast]);
 
   useEffect(() => {
-    if (isManualEntry || scannedMedicine) {
+    if (scannedMedicine || isManualEntry) {
         if(scannerRef.current?.isScanning) {
-            scannerRef.current.clear();
+            scannerRef.current.stop();
         }
         return;
     };
 
-    if (document.getElementById('reader')?.innerHTML !== "") return;
-
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      { qrbox: { width: 250, height: 250, }, fps: 5, rememberLastUsedCamera: true },
-      false
-    );
+    const scanner = new Html5Qrcode('reader');
     scannerRef.current = scanner;
 
-    function onScanSuccess(decodedText: string) {
-        if (scannerRef.current?.isScanning) {
-            scanner.pause();
-            handleBarcodeScanned(decodedText);
-        }
-    }
+    const onScanSuccess = (decodedText: string) => {
+        handleBarcodeScanned(decodedText);
+    };
 
-    scanner.render(onScanSuccess, (err) => {});
+    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, (err) => {})
+      .catch(err => {
+        // This might fail if the component unmounts, it's okay.
+      });
     
     return () => {
-        if (scannerRef.current && scannerRef.current.getState() !== 1) { // NOT_STARTED
-            scannerRef.current.clear().catch(error => {
+        if (scannerRef.current && scannerRef.current.isScanning) {
+            scannerRef.current.stop().catch(error => {
                 console.error("Failed to clear html5QrcodeScanner.", error);
             });
         }
@@ -173,7 +170,9 @@ export function RecordSaleClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            {!scannedMedicine && !isManualEntry && <div id="reader" className="w-full"></div>}
+            {!scannedMedicine && !isManualEntry && (
+              <div id="reader" className="w-full aspect-square bg-gray-100 rounded-md"></div>
+            )}
             
             {isFetching && (
                  <div className="flex items-center justify-center h-48">
@@ -200,7 +199,7 @@ export function RecordSaleClient() {
                 <div className="space-y-4">
                     <Label htmlFor="manual-barcode">QR Code Value</Label>
                     <Input id="manual-barcode" value={manualBarcode} onChange={(e) => setManualBarcode(e.target.value)} placeholder="Enter QR code..."/>
-                    <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)}>Find Medicine</Button>
+                    <Button className="w-full" onClick={() => handleBarcodeScanned(manualBarcode)} disabled={!manualBarcode}>Find Medicine</Button>
                 </div>
             )}
              {scannedMedicine && (
@@ -212,11 +211,11 @@ export function RecordSaleClient() {
             )}
         </CardContent>
         <CardFooter className="grid gap-2 grid-cols-2">
-            <Button onClick={handleRescan} className="w-full" variant={scannedMedicine ? "outline" : "default"} disabled={isFetching}>
+            <Button onClick={handleRescan} className="w-full" variant="outline" disabled={isFetching}>
                 <ScanLine className="mr-2 h-4 w-4" />
-                {scannedMedicine || isManualEntry ? 'New Sale' : 'Scanning...'}
+                New Sale
             </Button>
-             <Button variant="outline" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); }} disabled={isFetching}>
+             <Button variant="secondary" className="w-full" onClick={() => { setIsManualEntry(prev => !prev); setErrorInfo(null); setScannedMedicine(null); resetForm(); }} disabled={isFetching}>
                 <Keyboard className="mr-2 h-4 w-4" />
                 {isManualEntry ? 'Use Scanner' : 'Enter Manually'}
             </Button>

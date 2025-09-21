@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera, ScanLine, Info, Volume2, Upload } from 'lucide-react';
 import type { QRCodeMedicationInfoOutput } from '@/ai/flows/qrcode-medication-info';
 import { getQRCodeInfo } from '@/app/actions/medication-guide';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 import { Input } from './ui/input';
 
 export function QRCodeScannerClient() {
@@ -17,69 +17,45 @@ export function QRCodeScannerClient() {
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [isScanning, setIsScanning] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      'reader',
-      {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        fps: 5,
-        rememberLastUsedCamera: true,
-      },
-      /* verbose= */ false
-    );
+    if (!isScanning) return;
+    if (scannerRef.current) return;
+
+    const scanner = new Html5Qrcode('reader');
     scannerRef.current = scanner;
 
-    function onScanSuccess(decodedText: string, decodedResult: any) {
+    const onScanSuccess = (decodedText: string) => {
         setIsScanning(false);
-        scanner.pause();
-        handleCodeScanned(decodedText);
-    }
+        const videoElement = document.getElementById('reader__video') as HTMLVideoElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        const context = canvas.getContext('2d');
+        context?.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const imageDataUri = canvas.toDataURL('image/png');
+        handleAnalysis(imageDataUri);
+    };
 
-    function onScanFailure(error: any) {
-      // console.warn(`Code scan error = ${error}`);
-    }
-    
-    if (document.getElementById('reader')?.innerHTML === "") {
-        scanner.render(onScanSuccess, onScanFailure);
-        setIsScanning(scanner.isScanning);
-    }
+    const onScanFailure = (err: any) => {
+        // console.warn(err);
+    };
 
+    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, onScanFailure)
+      .catch((err) => {
+        setError("Could not start QR code scanner. Please check camera permissions.");
+      });
 
     return () => {
-      if (scannerRef.current && scannerRef.current.getState() === 2) { // SCANNING
-        scannerRef.current.clear().catch(error => {
-          console.error("Failed to clear html5QrcodeScanner.", error);
-        });
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(err => console.error("Failed to stop scanner", err));
       }
     };
-  }, []);
+  }, [isScanning]);
 
-  const handleCodeScanned = (scannedCode: string) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 100;
-    const context = canvas.getContext('2d');
-    if (!context) {
-      setError('Could not create canvas for QR code.');
-      return;
-    }
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = 'black';
-    context.font = '20px monospace';
-    context.textAlign = 'center';
-    context.fillText(`QR Code: ${scannedCode}`, canvas.width / 2, canvas.height / 2);
-    const imageDataUri = canvas.toDataURL('image/png');
-
-    handleAnalysis(imageDataUri);
-  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -89,6 +65,7 @@ export function QRCodeScannerClient() {
         const dataUri = e.target?.result as string;
         if (dataUri) {
           handleAnalysis(dataUri);
+          setIsScanning(false);
         }
       };
       reader.readAsDataURL(file);
@@ -123,20 +100,7 @@ export function QRCodeScannerClient() {
   const handleRescan = () => {
       setResult(null);
       setError(null);
-      if(scannerRef.current && !isScanning && scannerRef.current.getState() !== 2) {
-          scannerRef.current.render(
-            (decodedText) => {
-              setIsScanning(false);
-              scannerRef.current?.pause();
-              handleCodeScanned(decodedText);
-            },
-            (error) => { /* fail */ }
-          )
-          setIsScanning(true);
-      } else if (scannerRef.current && scannerRef.current.getState() === 3 /* PAUSED */) {
-        scannerRef.current.resume();
-        setIsScanning(true);
-      }
+      setIsScanning(true);
   }
 
   return (
@@ -152,7 +116,7 @@ export function QRCodeScannerClient() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="reader" className="w-full"></div>
+            <div id="reader" className="w-full aspect-square bg-gray-100 rounded-md"></div>
              {error && (
                 <Alert variant="destructive" className="mt-4">
                   <AlertTitle>Scan Failed</AlertTitle>
@@ -171,7 +135,7 @@ export function QRCodeScannerClient() {
                     'Scan Again'
                 )}
             </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isPending}>
               <Upload className="mr-2 h-4 w-4" />
               Upload QR Code
             </Button>
@@ -222,7 +186,7 @@ export function QRCodeScannerClient() {
             </CardContent>
           </Card>
         )}
-        {!isPending && !result && !error && (
+        {!isPending && !result && (
              <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Info className="h-10 w-10" />
