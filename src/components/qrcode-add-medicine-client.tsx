@@ -19,17 +19,23 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const [hasScanned, setHasScanned] = useState(false);
+  const [showScanner, setShowScanner] = useState(true);
   const readerId = 'add-med-reader';
+  const [isScanning, setIsScanning] = useState(false);
 
   const handleAnalysis = useCallback((qrCode: string) => {
+    setShowScanner(false);
+    setIsScanning(false);
     setErrorInfo(null);
-    setHasScanned(true);
 
     startTransition(async () => {
       const response = await fetchMedicineDetails({ qrCode });
       if (response.success && response.data) {
         onScan({ name: response.data.name, expDate: response.data.expDate });
+        toast({
+            title: "Medicine Scanned!",
+            description: "Details have been pre-filled in the manual entry form.",
+        })
       } else {
         const errorMessage = response.error || 'Failed to get information for this QR code.';
         setErrorInfo({ message: errorMessage, qrCode: response.qrCode });
@@ -41,9 +47,20 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
       }
     });
   }, [toast, onScan]);
+  
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (isScanning) {
+        handleAnalysis(decodedText);
+    }
+  }, [handleAnalysis, isScanning]);
+
+  const onScanFailure = useCallback(() => {
+    // Be quiet on failure
+  }, []);
+
 
   useEffect(() => {
-    if (document.getElementById(readerId) && !scannerRef.current) {
+    if (showScanner && !isScanning && document.getElementById(readerId)) {
         const config: Html5QrcodeCameraScanConfig = {
             qrbox: {
               width: 250,
@@ -58,20 +75,10 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
           config,
           false // verbose
         );
-
-        const onScanSuccess = (decodedText: string) => {
-            if (scanner.getState() === 2) { // SCANNING
-              try {
-                  scanner.pause(true);
-              } catch(e) {
-                  console.error("Failed to pause scanner", e);
-              }
-            }
-            handleAnalysis(decodedText);
-        }
         
-        scanner.render(onScanSuccess, undefined);
+        scanner.render(onScanSuccess, onScanFailure);
         scannerRef.current = scanner;
+        setIsScanning(true);
     }
 
     return () => {
@@ -84,25 +91,18 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
              console.error("Failed to clear html5QrcodeScanner on unmount.", e);
         } finally {
             scannerRef.current = null;
+            setIsScanning(false);
         }
       }
     };
-  }, [handleAnalysis]);
+  }, [showScanner, isScanning, onScanSuccess, onScanFailure]);
 
   const handleRescan = () => {
-    setHasScanned(false);
     setErrorInfo(null);
-    if (scannerRef.current) {
-        try {
-            if(scannerRef.current.getState() !== 2) { // SCANNING
-                scannerRef.current.resume();
-            }
-        } catch (e) {
-            console.error("Failed to resume scanner", e)
-        }
-    }
+    setShowScanner(true);
   }
 
+  const hasScanned = !showScanner && !isPending;
 
   return (
     <Card className="shadow-lg mt-4">
@@ -116,7 +116,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id={readerId} className={hasScanned ? 'hidden' : ''}></div>
+            <div id={readerId} className={!showScanner ? 'hidden' : ''}></div>
 
             {isPending && (
               <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
@@ -152,10 +152,12 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
               )}
         </CardContent>
          <CardFooter>
-            <Button onClick={handleRescan} className="w-full" disabled={isPending || !hasScanned}>
-              <ScanLine className="mr-2 h-4 w-4" />
-              Scan Another
-            </Button>
+            {hasScanned && (
+                <Button onClick={handleRescan} className="w-full" disabled={isPending}>
+                <ScanLine className="mr-2 h-4 w-4" />
+                Scan Another
+                </Button>
+            )}
         </CardFooter>
     </Card>
   );

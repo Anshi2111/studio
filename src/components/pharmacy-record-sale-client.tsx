@@ -28,6 +28,7 @@ export function RecordSaleClient() {
   const [manualBarcode, setManualBarcode] = useState('');
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const readerId = 'sale-reader';
+  const [isScanning, setIsScanning] = useState(false);
 
 
   // Form state
@@ -43,6 +44,7 @@ export function RecordSaleClient() {
   };
   
   const handleBarcodeScanned = useCallback((qrCode: string) => {
+    setIsScanning(false);
     setErrorInfo(null);
     setScannedMedicine(null);
     resetForm();
@@ -69,8 +71,17 @@ export function RecordSaleClient() {
     });
   }, [toast]);
   
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (isScanning) {
+        handleBarcodeScanned(decodedText);
+    }
+  }, [handleBarcodeScanned, isScanning]);
+
+  const onScanFailure = useCallback(() => {}, []);
+
+
   useEffect(() => {
-    if (mode === 'scanning' && !scannedMedicine && document.getElementById(readerId) && !scannerRef.current) {
+    if (mode === 'scanning' && !scannedMedicine && !isScanning && document.getElementById(readerId)) {
         const config: Html5QrcodeCameraScanConfig = { 
             fps: 10, 
             qrbox: { width: 250, height: 250 }, 
@@ -82,17 +93,9 @@ export function RecordSaleClient() {
             false
         );
 
-        const onScanSuccess = (decodedText: string) => {
-            if (scanner.getState() === 2) { // 2 === SCANNING
-                try {
-                    scanner.pause(true);
-                } catch(e) {}
-            }
-            handleBarcodeScanned(decodedText);
-        }
-
-        scanner.render(onScanSuccess, undefined);
+        scanner.render(onScanSuccess, onScanFailure);
         scannerRef.current = scanner;
+        setIsScanning(true);
     }
 
     return () => {
@@ -105,10 +108,11 @@ export function RecordSaleClient() {
               console.error("Failed to clear scanner on unmount:", error);
           } finally {
              scannerRef.current = null;
+             setIsScanning(false);
           }
       }
     };
-  }, [mode, scannedMedicine, handleBarcodeScanned]);
+  }, [mode, scannedMedicine, isScanning, onScanSuccess, onScanFailure]);
 
 
   const handleNewSale = () => {

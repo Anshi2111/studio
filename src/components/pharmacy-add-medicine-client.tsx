@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Upload, Database, Cloud, Search, ScanLine } from 'lucide-react';
+import { Loader2, Camera, Info, Package, PlusCircle, XCircle, Keyboard, Database, Cloud, Search, ScanLine } from 'lucide-react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Html5QrcodeScanner, Html5QrcodeCameraScanConfig } from 'html5-qrcode';
@@ -34,8 +34,10 @@ export function AddMedicineClient() {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [showForm, setShowForm] = useState(false);
   const readerId = 'add-medicine-reader';
+  const [isScanning, setIsScanning] = useState(false);
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
+    setIsScanning(false);
     setQrCode(decodedText);
     setErrorInfo(null);
     setShowForm(true);
@@ -67,9 +69,17 @@ export function AddMedicineClient() {
         }
     });
   }, [toast]);
+
+  const onScanSuccess = useCallback((decodedText: string) => {
+    if (isScanning) {
+        handleBarcodeDetection(decodedText);
+    }
+  }, [handleBarcodeDetection, isScanning]);
+
+  const onScanFailure = useCallback(() => {}, []);
   
   useEffect(() => {
-    if (mode === 'scanning' && !showForm && document.getElementById(readerId) && !scannerRef.current) {
+    if (mode === 'scanning' && !showForm && !isScanning && document.getElementById(readerId)) {
       const config: Html5QrcodeCameraScanConfig = { 
         fps: 10, 
         qrbox: { width: 250, height: 250 }, 
@@ -82,17 +92,9 @@ export function AddMedicineClient() {
         false
       );
 
-      const onScanSuccess = (decodedText: string) => {
-        if (scanner.getState() === 2) { // SCANNING
-          try {
-            scanner.pause(true);
-          } catch(e) {}
-        }
-        handleBarcodeDetection(decodedText);
-      }
-
-      scanner.render(onScanSuccess, undefined);
+      scanner.render(onScanSuccess, onScanFailure);
       scannerRef.current = scanner;
+      setIsScanning(true);
     }
 
     return () => {
@@ -105,10 +107,11 @@ export function AddMedicineClient() {
            console.error("Failed to clear scanner on unmount:", err)
         } finally {
             scannerRef.current = null;
+            setIsScanning(false);
         }
       }
     };
-  }, [mode, showForm, handleBarcodeDetection]);
+  }, [mode, showForm, isScanning, onScanSuccess, onScanFailure]);
   
 
   const resetForm = () => {
