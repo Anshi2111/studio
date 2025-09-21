@@ -19,7 +19,7 @@ export function AddMedicineClient() {
   
   const { toast } = useToast();
 
-  const [mode, setMode] = useState<'scanning' | 'manual' | 'details'>('scanning');
+  const [mode, setMode] = useState<'scanning' | 'manual'>('scanning');
   
   // Form state
   const [name, setName] = useState('');
@@ -32,11 +32,12 @@ export function AddMedicineClient() {
   const [source, setSource] = useState<'firestore' | 'public_api' | 'manual' | null>(null);
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const handleBarcodeDetection = useCallback((decodedText: string) => {
     setQrCode(decodedText);
     setErrorInfo(null);
-    setMode('details');
+    setShowForm(true);
 
     startFetchTransition(async () => {
         const response = await fetchMedicineDetails({ qrCode: decodedText });
@@ -77,7 +78,7 @@ export function AddMedicineClient() {
   }, [handleBarcodeDetection]);
 
   useEffect(() => {
-    if (mode === 'scanning' && !scannerRef.current && document.getElementById('reader')) {
+    if (mode === 'scanning' && !showForm && !scannerRef.current && document.getElementById('reader')) {
       const qrScanner = new Html5QrcodeScanner(
         'reader',
         { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
@@ -93,7 +94,7 @@ export function AddMedicineClient() {
         scannerRef.current = null;
       }
     };
-  }, [mode, onScanSuccess]);
+  }, [mode, onScanSuccess, showForm]);
   
 
   const resetForm = () => {
@@ -110,9 +111,7 @@ export function AddMedicineClient() {
 
   const handleNewScan = () => {
     resetForm();
-    if (scannerRef.current && scannerRef.current.getState() !== 2) { // 2 === SCANNING
-        scannerRef.current.resume();
-    }
+    setShowForm(false);
     setMode('scanning');
   };
 
@@ -136,32 +135,10 @@ export function AddMedicineClient() {
   
   const isFormValid = name && batchNo && mfgDate && expDate && quantity && supplier && qrCode;
 
-  return (
-    <div className="grid gap-8 md:grid-cols-2">
-      {mode === 'scanning' ? (
-        <Card className="shadow-lg md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl font-headline">
-              <Camera className="h-6 w-6" />
-              Scan QR Code
-            </CardTitle>
-            <CardDescription>
-              Place a medicine's QR code in the viewfinder.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="relative">
-            <div id="reader" className="w-full"></div>
-          </CardContent>
-           <CardFooter className="grid grid-cols-1 gap-2">
-            <Button variant="outline" className="w-full" onClick={() => setMode('manual')}>
-                <Keyboard className="mr-2 h-4 w-4" />
-                Enter Details Manually
-            </Button>
-           </CardFooter>
-        </Card>
-      ) : (
-        <>
-          <Card className="shadow-lg">
+  if (showForm) {
+      return (
+        <div className="grid gap-8 md:grid-cols-2">
+            <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font_headline">
                     <Package className="h-6 w-6" />
@@ -243,7 +220,7 @@ export function AddMedicineClient() {
                         {errorInfo.qrCode && (
                             <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline text-primary">
                                <Search className="h-4 w-4" />
-                               Search for this code online
+                               Search for this code on Google
                            </Link>
                         )}
                     </div>
@@ -254,8 +231,41 @@ export function AddMedicineClient() {
                     </div>
                 )}
             </div>
-        </>
-      )}
-    </div>
+        </div>
+      )
+  }
+
+  return (
+    <Card className="shadow-lg md:col-span-2">
+        <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl font-headline">
+            <Camera className="h-6 w-6" />
+            Scan QR Code
+        </CardTitle>
+        <CardDescription>
+            Place a medicine's QR code in the viewfinder, or enter it manually.
+        </CardDescription>
+        </CardHeader>
+        <CardContent className="relative">
+            {mode === 'scanning' ? (
+                <div id="reader" className="w-full"></div>
+            ) : (
+                <div className="space-y-4">
+                    <Label htmlFor="manual-barcode">QR Code Value</Label>
+                    <Input id="manual-barcode" value={qrCode} onChange={(e) => setQrCode(e.target.value)} placeholder="Enter QR code..."/>
+                    <Button className="w-full" onClick={() => handleBarcodeDetection(qrCode)} disabled={!qrCode}>Find Medicine</Button>
+                </div>
+            )}
+        </CardContent>
+        <CardFooter className="grid grid-cols-1 gap-2">
+        <Button variant="outline" className="w-full" onClick={() => {
+            setMode(mode === 'scanning' ? 'manual' : 'scanning');
+            resetForm();
+            }}>
+            <Keyboard className="mr-2 h-4 w-4" />
+            {mode === 'scanning' ? 'Enter Details Manually' : 'Use Scanner'}
+        </Button>
+        </CardFooter>
+    </Card>
   );
 }

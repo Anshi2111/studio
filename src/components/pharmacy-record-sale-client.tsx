@@ -45,16 +45,15 @@ export function RecordSaleClient() {
     setErrorInfo(null);
     setScannedMedicine(null);
     resetForm();
+    if(scannerRef.current) {
+        scannerRef.current.clear().catch(e => console.error(e));
+        scannerRef.current = null;
+    }
 
     startFetchTransition(async () => {
         const response = await fetchMedicineDetails({ qrCode });
         if (response.success && response.data) {
             setScannedMedicine(response.data);
-            setMode('scanning'); // Return to scanning mode visually but with data loaded
-            if (scannerRef.current) {
-              scannerRef.current.clear().catch(err => console.error("Scanner clear failed", err));
-              scannerRef.current = null;
-            }
             toast({
                 title: "Medicine Found!",
                 description: `${response.data.name} is ready to be sold.`,
@@ -63,6 +62,7 @@ export function RecordSaleClient() {
             const errorMessage = response.error || 'Medicine not found in any database.';
             setErrorInfo({ message: errorMessage, qrCode: response.qrCode });
             setScannedMedicine(null);
+            setMode('scanning');
             toast({
                 variant: "destructive",
                 title: "Medicine Not Found",
@@ -208,7 +208,7 @@ export function RecordSaleClient() {
                         {errorInfo.qrCode && (
                            <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                                <Search className="h-4 w-4" />
-                               Search for this code online
+                               Search for this code on Google
                            </Link>
                         )}
                     </AlertDescription>
@@ -230,7 +230,7 @@ export function RecordSaleClient() {
             )}
         </CardContent>
         <CardFooter className="grid gap-2 grid-cols-1">
-            {scannedMedicine ? (
+            {scannedMedicine || errorInfo ? (
                  <Button onClick={handleNewSale} className="w-full" variant="outline" disabled={isFetching}>
                     <ScanLine className="mr-2 h-4 w-4" />
                     New Sale

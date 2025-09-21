@@ -47,7 +47,10 @@ export function QRCodeScannerClient() {
 
   const onScanSuccess = useCallback((decodedText: string) => {
       if (scannerRef.current) {
-        // scannerRef.current.pause(true);
+        const state = scannerRef.current.getState();
+        if(state === 2) { // 2 === SCANNING
+          scannerRef.current.pause(true);
+        }
       }
       handleAnalysis(decodedText);
   }, [handleAnalysis]);
@@ -68,14 +71,7 @@ export function QRCodeScannerClient() {
         /* verbose= */ false
       );
       
-      const successCallback = (decodedText: string, decodedResult: any) => {
-        if(scannerRef.current) {
-            scannerRef.current.pause(true);
-            onScanSuccess(decodedText);
-        }
-      }
-
-      qrScanner.render(successCallback, undefined);
+      qrScanner.render(onScanSuccess, undefined);
       scannerRef.current = qrScanner;
     }
 
@@ -97,8 +93,6 @@ export function QRCodeScannerClient() {
       scannerRef.current.pause(true);
     }
     
-    // The library needs a DOM element to mount a hidden video element for processing.
-    // So we ensure a placeholder div exists, even if it's not the main scanner div.
     const placeholderId = "reader-placeholder";
     let placeholder = document.getElementById(placeholderId);
     if (!placeholder) {
@@ -107,7 +101,6 @@ export function QRCodeScannerClient() {
       placeholder.style.display = 'none';
       document.body.appendChild(placeholder);
     }
-
 
     const html5QrCode = new Html5Qrcode(placeholderId, false);
     html5QrCode.scanFile(file, true)
@@ -120,6 +113,7 @@ export function QRCodeScannerClient() {
                 title: "Scan Failed",
                 description: "Could not decode QR code from the uploaded image.",
             });
+            handleRescan(); // Resume scanner on file read fail
         });
   };
 
@@ -160,31 +154,34 @@ export function QRCodeScannerClient() {
                     {errorInfo.qrCode && (
                        <Link href={`https://www.google.com/search?q=${encodeURIComponent(errorInfo.qrCode)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 underline">
                            <Search className="h-4 w-4" />
-                           Search for this code online
+                           Search for this code on Google
                        </Link>
                     )}
                   </AlertDescription>
                 </Alert>
               )}
         </CardContent>
-         <CardFooter className="grid grid-cols-2 gap-2">
-            {!showScanner && (
+         <CardFooter className="grid grid-cols-1 gap-2">
+            {!showScanner ? (
               <Button onClick={handleRescan} disabled={isPending}>
                   <ScanLine className="mr-2 h-4 w-4" />
                   Scan Again
               </Button>
+            ) : (
+                <>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload QR Code
+                </Button>
+                <Input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+                />
+                </>
             )}
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className={showScanner ? 'col-span-2' : ''}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload QR Code
-            </Button>
-            <Input 
-              type="file" 
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/*"
-            />
         </CardFooter>
       </Card>
 
