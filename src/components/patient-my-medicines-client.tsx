@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { Button } from './ui/button';
-import { PlusCircle, Bot, Loader2, Mail, Save, QrCode } from 'lucide-react';
+import { PlusCircle, Bot, Loader2, Mail, QrCode } from 'lucide-react';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { findMedicationExpiryDate } from '@/app/actions/medication-guide';
@@ -24,7 +24,7 @@ interface CombinedMedicineRecord {
     mfgDate?: string;
     expiryDate?: string;
     quantity?: number;
-    source: 'Purchased' | 'Manual';
+    source: 'Purchased' | 'Manual' | 'Scanned';
     dateAdded: string;
     id: string; // From sales or cabinet
 }
@@ -67,7 +67,7 @@ export function MyMedicinesClient() {
             mfgDate: undefined,
             expiryDate: med.expiryDate,
             quantity: undefined,
-            source: 'Manual' as const,
+            source: med.source || ('Manual' as const),
             dateAdded: med.purchaseDate,
             id: med.id,
         }));
@@ -90,8 +90,8 @@ export function MyMedicinesClient() {
         localStorage.setItem(MED_CABINET_STORAGE_KEY, JSON.stringify(sortedMeds));
         fetchMedicines(); // Refresh the main list
     };
-
-    const handleAddMedication = () => {
+    
+    const handleAddMedication = (source: 'Manual' | 'Scanned' = 'Manual') => {
         if (newMedName && newMedPurchaseDate) {
           const cabinetRecordsStr = localStorage.getItem(MED_CABINET_STORAGE_KEY);
           const cabinetRecords = cabinetRecordsStr ? JSON.parse(cabinetRecordsStr) : [];
@@ -101,6 +101,7 @@ export function MyMedicinesClient() {
             name: newMedName,
             purchaseDate: newMedPurchaseDate,
             expiryDate: newMedExpiry,
+            source,
           };
           updateManualMedicines([...cabinetRecords, newMed]);
           
@@ -114,6 +115,7 @@ export function MyMedicinesClient() {
           })
         }
     };
+
 
     const handleFindExpiry = () => {
         if (!newMedName || !newMedPurchaseDate || !userEmail) {
@@ -151,6 +153,7 @@ export function MyMedicinesClient() {
             title: "Medicine Details Filled",
             description: `Details for ${data.name} have been pre-filled. Add a purchase date and save.`,
         });
+        handleAddMedication('Scanned');
     }, [toast]);
 
 
@@ -203,7 +206,7 @@ export function MyMedicinesClient() {
                     </Button>
                 </div>
             </div>
-            <Button onClick={handleAddMedication} className="w-full" disabled={!newMedName || !newMedPurchaseDate}>
+            <Button onClick={() => handleAddMedication('Manual')} className="w-full" disabled={!newMedName || !newMedPurchaseDate}>
                 <PlusCircle className="mr-2 h-4 w-4"/>
                 Add to My Medicines
             </Button>
@@ -239,7 +242,7 @@ export function MyMedicinesClient() {
                                     <TableRow key={med.id}>
                                         <TableCell className="font-medium">{med.name}</TableCell>
                                         <TableCell>
-                                            <Badge variant={med.source === 'Purchased' ? 'default' : 'outline'}>
+                                            <Badge variant={med.source === 'Purchased' ? 'default' : med.source === 'Scanned' ? 'secondary' : 'outline'}>
                                                 {med.source}
                                             </Badge>
                                         </TableCell>
@@ -262,7 +265,7 @@ export function MyMedicinesClient() {
                 <Tabs defaultValue="manual">
                      <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                        <TabsTrigger value="scan"><QrCode className="w-4 h-4 mr-2"/>Scan</TabsTrigger>
+                        <TabsTrigger value="scan"><QrCode className="w-4 h-4 mr-2"/>Scan to Add</TabsTrigger>
                     </TabsList>
                     <TabsContent value="manual">
                         {addMedicineForm}

@@ -65,6 +65,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
   }
 
   useEffect(() => {
+    // Do not render the scanner if it's already been cleared or exists.
     if (document.getElementById('add-med-reader')?.innerHTML !== "" || scannerRef.current) return;
 
     const scanner = new Html5QrcodeScanner(
@@ -77,7 +78,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
         fps: 5,
         rememberLastUsedCamera: true,
       },
-      false
+      false // verbose
     );
     
     scanner.render(onScanSuccess, undefined);
@@ -124,7 +125,7 @@ export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps
                 <Alert>
                     <AlertTitle>Scan Successful!</AlertTitle>
                     <AlertDescription>
-                        The medicine details have been pre-filled. Switch to the "Manual Entry" tab to see them.
+                        The medicine details have been pre-filled. Switch to the "Manual Entry" tab to see them and save.
                     </AlertDescription>
                 </Alert>
             )}
