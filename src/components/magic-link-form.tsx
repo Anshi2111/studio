@@ -77,16 +77,13 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
     // --- MOCK LOGIN FOR DEVELOPMENT/PREVIEW ENVIRONMENT ---
     // This simulates a successful login without sending an email.
     if (process.env.NODE_ENV !== 'production') {
-      console.log("MOCK LOGIN: Simulating magic link sign-in for development environment.");
-      setEmailSent(true);
-      setTimeout(() => {
-          toast({
-              title: 'Login Successful (Simulated)',
-              description: `Redirecting to the ${title}...`,
-          });
-          router.push(redirectPath);
-      }, 1500);
-      return; // Important: exit the function here
+        console.log("MOCK LOGIN: Simulating magic link sign-in for development environment.");
+        toast({
+            title: 'Login Successful (Simulated)',
+            description: `Redirecting to the ${title}...`,
+        });
+        router.push(redirectPath);
+        return; // Important: exit the function here
     }
 
     
@@ -137,7 +134,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
           <div className="flex justify-center">{icon}</div>
           <CardTitle className="text-3xl font-headline">{title}</CardTitle>
           <CardDescription>
-            {emailSent ? 'Preparing your dashboard...' : 'Enter your email to receive a passwordless login link.'}
+            {emailSent ? 'Check your email for the magic link.' : 'Enter your email to receive a passwordless login link.'}
           </CardDescription>
         </CardHeader>
 
@@ -147,12 +144,9 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
               <Mail className="h-4 w-4" />
               <AlertTitle>Magic Link Sent!</AlertTitle>
               <AlertDescription>
-                In a live environment, you would check your email now. For this demo, we will redirect you automatically.
+                Please check your inbox at {email} and click the link to sign in.
               </AlertDescription>
             </Alert>
-             <div className="flex justify-center mt-4">
-                 <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-             </div>
           </CardContent>
         ) : (
           <form onSubmit={handleMagicLinkSignIn}>
