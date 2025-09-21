@@ -5,17 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Camera, ScanLine, Search, Upload } from 'lucide-react';
+import { Loader2, Camera, ScanLine, Search } from 'lucide-react';
 import { fetchMedicineDetails } from '@/app/actions/medication-guide';
-import type { MedicineDetailsOutput } from '@/ai/flows/get-medicine-details';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Link from 'next/link';
 
-interface QRCodeScannerCabinetClientProps {
+interface QRCodeAddMedicineClientProps {
     onScan: (data: { name: string; expDate: string }) => void;
 }
 
-export function QRCodeScannerCabinetClient({ onScan }: QRCodeScannerCabinetClientProps) {
+export function QRCodeAddMedicineClient({ onScan }: QRCodeAddMedicineClientProps) {
   const [isPending, startTransition] = useTransition();
   const [errorInfo, setErrorInfo] = useState<{ message: string; qrCode?: string } | null>(null);
   const { toast } = useToast();
@@ -66,11 +65,10 @@ export function QRCodeScannerCabinetClient({ onScan }: QRCodeScannerCabinetClien
   }
 
   useEffect(() => {
-    // Prevents double-initialization in React Strict Mode
-    if (scannerRef.current) return;
+    if (document.getElementById('add-med-reader')?.innerHTML !== "" || scannerRef.current) return;
 
     const scanner = new Html5QrcodeScanner(
-      'cabinet-reader',
+      'add-med-reader',
       {
         qrbox: {
           width: 250,
@@ -79,7 +77,7 @@ export function QRCodeScannerCabinetClient({ onScan }: QRCodeScannerCabinetClien
         fps: 5,
         rememberLastUsedCamera: true,
       },
-      /* verbose= */ false
+      false
     );
     
     scanner.render(onScanSuccess, undefined);
@@ -100,18 +98,18 @@ export function QRCodeScannerCabinetClient({ onScan }: QRCodeScannerCabinetClien
 
 
   return (
-    <Card className="shadow-lg max-w-lg mx-auto mt-6">
+    <Card className="shadow-lg mt-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl font-headline">
             <Camera className="h-6 w-6" />
             Scan QR to Add
           </CardTitle>
           <CardDescription>
-            Scan a medicine's QR code to pre-fill the name and expiry date.
+            Scan a QR code to pre-fill the name and expiry date in the form.
           </CardDescription>
         </CardHeader>
         <CardContent className="relative">
-            <div id="cabinet-reader" className={hasScanned ? 'hidden' : ''}></div>
+            <div id="add-med-reader" className={hasScanned ? 'hidden' : ''}></div>
 
             {isPending && (
               <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-center h-full">
@@ -126,7 +124,7 @@ export function QRCodeScannerCabinetClient({ onScan }: QRCodeScannerCabinetClien
                 <Alert>
                     <AlertTitle>Scan Successful!</AlertTitle>
                     <AlertDescription>
-                        The medicine details have been pre-filled in the "Manual Entry" tab. Go there to add it to your cabinet.
+                        The medicine details have been pre-filled. Switch to the "Manual Entry" tab to see them.
                     </AlertDescription>
                 </Alert>
             )}
