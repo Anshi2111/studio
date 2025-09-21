@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2, Stethoscope, Pill, Activity, StickyNote, Paperclip, Upload, X } from 'lucide-react';
+import { PlusCircle, Trash2, Stethoscope, Pill, Activity, StickyNote, Paperclip, Upload, X, File } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +33,7 @@ interface HistoryEntry {
     tabletsPerDay: number;
     courseDurationDays: number;
     endDate: string;
+    prescriptionImageName?: string;
     
     // Tracking
     missedDose: boolean;
@@ -42,6 +43,7 @@ interface HistoryEntry {
     notes: string;
     followUpDate: string;
     doctorsAdvice: string;
+    labReportName?: string;
 }
 
 const defaultEntry: Omit<HistoryEntry, 'id'> = {
@@ -56,12 +58,51 @@ const defaultEntry: Omit<HistoryEntry, 'id'> = {
     tabletsPerDay: 0,
     courseDurationDays: 0,
     endDate: '',
+    prescriptionImageName: undefined,
     missedDose: false,
     completionStatus: 'ongoing',
     notes: '',
     followUpDate: '',
     doctorsAdvice: '',
+    labReportName: undefined,
 };
+
+// Custom File Input Component
+function FileInputButton({ label, onFileChange, selectedFileName, onClear, icon }: { label: string; onFileChange: (file: File | null) => void; selectedFileName?: string; onClear: () => void, icon: React.ReactNode }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        onFileChange(file);
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label>{label}</Label>
+            {!selectedFileName ? (
+                <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground" onClick={() => inputRef.current?.click()}>
+                    {icon} {label}
+                </Button>
+            ) : (
+                <div className="flex items-center justify-between gap-2 rounded-md border border-input p-2 text-sm">
+                    <div className="flex items-center gap-2 truncate">
+                        <File className="h-4 w-4 shrink-0"/>
+                        <span className="truncate">{selectedFileName}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={onClear}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+            <Input
+                ref={inputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileChange}
+            />
+        </div>
+    );
+}
 
 export function MedicalHistoryClient() {
     const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -85,6 +126,10 @@ export function MedicalHistoryClient() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormState(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleFileChange = (name: 'prescriptionImageName' | 'labReportName', file: File | null) => {
+        setFormState(prev => ({ ...prev, [name]: file?.name }));
     };
 
     const handleSelectChange = (name: string, value: string) => {
@@ -221,7 +266,13 @@ export function MedicalHistoryClient() {
                                 <Input id="endDate" name="endDate" type="date" value={formState.endDate} onChange={handleInputChange} />
                             </div>
                          </div>
-                         <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground"><Upload className="h-4 w-4"/> Upload Prescription Image</Button>
+                        <FileInputButton
+                            label="Upload Prescription Image"
+                            icon={<Upload className="h-4 w-4"/>}
+                            selectedFileName={formState.prescriptionImageName}
+                            onFileChange={(file) => handleFileChange('prescriptionImageName', file)}
+                            onClear={() => setFormState(prev => ({ ...prev, prescriptionImageName: undefined }))}
+                        />
                     </div>
 
                     {/* Tracking & Notes */}
@@ -254,7 +305,13 @@ export function MedicalHistoryClient() {
                                 <Label htmlFor="doctorsAdvice">Doctor's Notes/Advice</Label>
                                 <Textarea id="doctorsAdvice" name="doctorsAdvice" value={formState.doctorsAdvice} onChange={handleInputChange} />
                             </div>
-                            <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground"><Paperclip className="h-4 w-4"/> Attach Lab Report</Button>
+                            <FileInputButton
+                                label="Attach Lab Report"
+                                icon={<Paperclip className="h-4 w-4"/>}
+                                selectedFileName={formState.labReportName}
+                                onFileChange={(file) => handleFileChange('labReportName', file)}
+                                onClear={() => setFormState(prev => ({ ...prev, labReportName: undefined }))}
+                            />
                         </div>
                     </div>
                      <div className="flex justify-end gap-2">
@@ -306,6 +363,13 @@ export function MedicalHistoryClient() {
                                                 <div><strong className="block text-foreground">Clinic/Hospital</strong> {entry.hospitalName || 'N/A'}</div>
                                                 {entry.followUpDate && <div><strong className="block text-foreground">Follow-up</strong> {format(new Date(entry.followUpDate), 'PPP')}</div>}
                                             </div>
+                                            {(entry.prescriptionImageName || entry.labReportName) && (
+                                                <div className="text-sm space-y-2">
+                                                    <strong className="block text-foreground">Attachments</strong>
+                                                    {entry.prescriptionImageName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.prescriptionImageName}</span></div>}
+                                                    {entry.labReportName && <div className="flex items-center gap-2"><Paperclip className="h-4 w-4"/><span>{entry.labReportName}</span></div>}
+                                                </div>
+                                            )}
                                             {entry.doctorsAdvice && <p className="text-sm"><strong className="block text-foreground">Doctor's Advice</strong>{entry.doctorsAdvice}</p>}
                                             {entry.notes && <p className="text-sm"><strong className="block text-foreground">Personal Notes</strong>{entry.notes}</p>}
                                             
@@ -331,3 +395,5 @@ export function MedicalHistoryClient() {
         </Card>
     );
 }
+
+    
