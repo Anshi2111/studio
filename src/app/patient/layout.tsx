@@ -20,10 +20,10 @@ import { DashboardHeader } from '@/components/dashboard/header';
 const menuItems = [
   { href: '/patient/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/patient/appointments', label: 'Appointments', icon: Calendar },
-  { href: '/patient/my-medicines', label: 'My Medicines', icon: Pill },
   { href: '/patient/medication-guide', label: 'Medication Guide', icon: BookHeart },
-  { href: '/patient/reminders', label: 'Reminders', icon: Bell },
+  { href: '/patient/my-medicines', label: 'My Medicines', icon: Pill },
   { href: '/patient/my-records', label: 'My Records', icon: History },
+  { href: '/patient/reminders', label: 'Reminders', icon: Bell },
 ];
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
