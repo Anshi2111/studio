@@ -6,33 +6,67 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Save, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { PlusCircle, Trash2, Hospital, Stethoscope, Microscope, Paperclip, Upload, Pill, CalendarDays, FileImage, CircleHelp, StickyNote, Activity } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from './ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Badge } from './ui/badge';
+
 
 const HISTORY_STORAGE_KEY = 'healthure-medical-history';
 
 interface HistoryEntry {
     id: string;
-    medicineName: string;
+    // Medical Details
+    diagnosis: string;
+    symptoms: string;
+    hospitalName: string;
     doctorName: string;
-    appointmentDate: string;
+    appointmentDate: string; // Start Date
+    
+    // Prescription Details
+    medicineName: string;
+    medicineType: string;
+    strength: string;
     tabletsPerDay: number;
     courseDurationDays: number;
-    conditionNotes: string;
+    endDate: string;
+    
+    // Tracking
+    missedDose: boolean;
+    completionStatus: 'ongoing' | 'finished';
+
+    // Notes & Reports
+    notes: string;
+    followUpDate: string;
+    doctorsAdvice: string;
 }
+
+const defaultEntry: Omit<HistoryEntry, 'id'> = {
+    diagnosis: '',
+    symptoms: '',
+    hospitalName: '',
+    doctorName: '',
+    appointmentDate: new Date().toISOString().split('T')[0],
+    medicineName: '',
+    medicineType: 'Tablet',
+    strength: '',
+    tabletsPerDay: 0,
+    courseDurationDays: 0,
+    endDate: '',
+    missedDose: false,
+    completionStatus: 'ongoing',
+    notes: '',
+    followUpDate: '',
+    doctorsAdvice: '',
+};
 
 export function MedicalHistoryClient() {
     const [history, setHistory] = useState<HistoryEntry[]>([]);
+    const [formState, setFormState] = useState<Omit<HistoryEntry, 'id'>>(defaultEntry);
     const { toast } = useToast();
-
-    // Form state
-    const [medicineName, setMedicineName] = useState('');
-    const [doctorName, setDoctorName] = useState('');
-    const [appointmentDate, setAppointmentDate] = useState(new Date().toISOString().split('T')[0]);
-    const [tabletsPerDay, setTabletsPerDay] = useState('');
-    const [courseDurationDays, setCourseDurationDays] = useState('');
-    const [conditionNotes, setConditionNotes] = useState('');
 
     useEffect(() => {
         const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
@@ -42,28 +76,39 @@ export function MedicalHistoryClient() {
     }, []);
 
     const handleSaveHistory = (updatedHistory: HistoryEntry[]) => {
-        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
-        setHistory(updatedHistory);
+        const sortedHistory = updatedHistory.sort((a,b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(sortedHistory));
+        setHistory(sortedHistory);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSelectChange = (name: string, value: string) => {
+        setFormState(prev => ({ ...prev, [name]: value }));
     };
 
     const handleAddEntry = () => {
-        if (!medicineName || !doctorName || !appointmentDate) {
+        if (!formState.diagnosis || !formState.doctorName || !formState.medicineName) {
             toast({
                 variant: 'destructive',
-                title: 'Missing Fields',
-                description: 'Please fill in all required fields to add a new entry.'
+                title: 'Missing Required Fields',
+                description: 'Please fill in Diagnosis, Doctor, and Medicine Name.'
             });
             return;
         }
 
+        const startDate = new Date(formState.appointmentDate);
+        const endDate = formState.courseDurationDays > 0 ? format(addDays(startDate, formState.courseDurationDays), 'yyyy-MM-dd') : formState.endDate;
+
         const newEntry: HistoryEntry = {
             id: `hist_${Date.now()}`,
-            medicineName,
-            doctorName,
-            appointmentDate,
-            tabletsPerDay: parseInt(tabletsPerDay) || 0,
-            courseDurationDays: parseInt(courseDurationDays) || 0,
-            conditionNotes,
+            ...formState,
+            endDate: endDate,
+            tabletsPerDay: Number(formState.tabletsPerDay) || 0,
+            courseDurationDays: Number(formState.courseDurationDays) || 0,
         };
 
         const updatedHistory = [newEntry, ...history];
@@ -75,12 +120,7 @@ export function MedicalHistoryClient() {
         });
 
         // Reset form
-        setMedicineName('');
-        setDoctorName('');
-        setAppointmentDate(new Date().toISOString().split('T')[0]);
-        setTabletsPerDay('');
-        setCourseDurationDays('');
-        setConditionNotes('');
+        setFormState(defaultEntry);
     };
 
     const handleDeleteEntry = (id: string) => {
@@ -91,6 +131,13 @@ export function MedicalHistoryClient() {
             description: 'The medical history entry has been removed.'
         });
     };
+
+    const toggleMissedDose = (id: string) => {
+        const updatedHistory = history.map(entry => 
+            entry.id === id ? { ...entry, missedDose: !entry.missedDose } : entry
+        );
+        handleSaveHistory(updatedHistory);
+    };
     
     return (
         <Card>
@@ -99,69 +146,157 @@ export function MedicalHistoryClient() {
                 <CardDescription>Record and view your medical history timeline.</CardDescription>
             </CardHeader>
             <CardContent className="grid md:grid-cols-3 gap-8">
+                {/* History Timeline */}
                 <div className="md:col-span-2">
-                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-lg">Your Timeline</h3>
-                    </div>
+                     <h3 className="font-semibold text-lg mb-4">Your Timeline</h3>
                     <div className="space-y-4">
-                        {history.length > 0 ? history.map(entry => (
-                            <Card key={entry.id} className="bg-muted/50">
-                                <CardHeader className="p-4">
-                                    <CardTitle className="text-base flex justify-between">
-                                        <span>{entry.medicineName} with {entry.doctorName}</span>
-                                        <span className="text-sm font-normal text-muted-foreground">{format(new Date(entry.appointmentDate), 'PPP')}</span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-4 pt-0">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">{entry.conditionNotes}</p>
-                                            {(entry.tabletsPerDay > 0 || entry.courseDurationDays > 0) && (
-                                                <p className="text-xs mt-2">
-                                                    Dosage: {entry.tabletsPerDay || 'N/A'} tablets/day for {entry.courseDurationDays || 'N/A'} days
-                                                </p>
-                                            )}
-                                        </div>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteEntry(entry.id)}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )) : (
+                        {history.length > 0 ? (
+                            <Accordion type="multiple" className="w-full">
+                                {history.map(entry => (
+                                    <AccordionItem value={entry.id} key={entry.id}>
+                                        <AccordionTrigger>
+                                            <div className="flex justify-between w-full pr-4">
+                                                <div className="flex flex-col text-left">
+                                                    <span className="font-bold text-base">{entry.diagnosis}</span>
+                                                    <span className="text-sm text-muted-foreground">Dr. {entry.doctorName} - {format(new Date(entry.appointmentDate), 'PPP')}</span>
+                                                </div>
+                                                <Badge variant={entry.completionStatus === 'finished' ? 'secondary' : 'default'}>{entry.completionStatus}</Badge>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="bg-muted/30 p-4 rounded-b-md">
+                                            <div className="grid gap-4">
+                                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                                    <div><strong className="block text-foreground">Medicine</strong> {entry.medicineName} ({entry.strength})</div>
+                                                    <div><strong className="block text-foreground">Dosage</strong> {entry.tabletsPerDay} {entry.medicineType.toLowerCase()}(s) for {entry.courseDurationDays} days</div>
+                                                    <div><strong className="block text-foreground">Symptoms</strong> {entry.symptoms || 'N/A'}</div>
+                                                    <div><strong className="block text-foreground">Clinic/Hospital</strong> {entry.hospitalName || 'N/A'}</div>
+                                                    {entry.followUpDate && <div><strong className="block text-foreground">Follow-up</strong> {format(new Date(entry.followUpDate), 'PPP')}</div>}
+                                                </div>
+                                                {entry.doctorsAdvice && <p className="text-sm"><strong className="block text-foreground">Doctor's Advice</strong>{entry.doctorsAdvice}</p>}
+                                                {entry.notes && <p className="text-sm"><strong className="block text-foreground">Personal Notes</strong>{entry.notes}</p>}
+                                                
+                                                <div className="flex items-center justify-between mt-4">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Checkbox id={`missed-${entry.id}`} checked={entry.missedDose} onCheckedChange={() => toggleMissedDose(entry.id)} />
+                                                        <Label htmlFor={`missed-${entry.id}`} className="text-sm">Missed Dose?</Label>
+                                                    </div>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteEntry(entry.id)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        ) : (
                             <p className="text-center text-muted-foreground py-8">No history recorded yet.</p>
                         )}
                     </div>
                 </div>
+                {/* Add New Entry Form */}
                 <div className="space-y-4 rounded-lg border p-4 bg-background h-fit">
                     <h3 className="font-semibold text-lg">Add New Entry</h3>
+                    
+                    {/* Patient/Medical Details */}
+                    <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground pt-2"><Stethoscope className="h-4 w-4"/>Medical Details</h4>
                     <div className="space-y-2">
-                        <Label htmlFor="hist-med-name">Medicine Name</Label>
-                        <Input id="hist-med-name" value={medicineName} onChange={e => setMedicineName(e.target.value)} />
+                        <Label htmlFor="diagnosis">Reason/Diagnosis</Label>
+                        <Input id="diagnosis" name="diagnosis" value={formState.diagnosis} onChange={handleInputChange} />
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="hist-doc-name">Doctor Name</Label>
-                        <Input id="hist-doc-name" value={doctorName} onChange={e => setDoctorName(e.target.value)} />
+                    <div className="space-y-2">
+                        <Label htmlFor="symptoms">Symptoms</Label>
+                        <Input id="symptoms" name="symptoms" value={formState.symptoms} onChange={handleInputChange} />
                     </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="doctorName">Doctor Name</Label>
+                        <Input id="doctorName" name="doctorName" value={formState.doctorName} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="hospitalName">Hospital/Clinic Name</Label>
+                        <Input id="hospitalName" name="hospitalName" value={formState.hospitalName} onChange={handleInputChange} />
+                    </div>
+                    
+                    {/* Medicine Details */}
+                    <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground pt-2"><Pill className="h-4 w-4"/>Prescription Details</h4>
                      <div className="space-y-2">
-                        <Label htmlFor="hist-date">Appointment Date</Label>
-                        <Input id="hist-date" type="date" value={appointmentDate} onChange={e => setAppointmentDate(e.target.value)} />
+                        <Label htmlFor="medicineName">Medicine Name</Label>
+                        <Input id="medicineName" name="medicineName" value={formState.medicineName} onChange={handleInputChange} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="hist-tablets">Tablets/Day</Label>
-                            <Input id="hist-tablets" type="number" value={tabletsPerDay} onChange={e => setTabletsPerDay(e.target.value)} placeholder="e.g., 2" />
+                            <Label htmlFor="medicineType">Type</Label>
+                            <Select name="medicineType" value={formState.medicineType} onValueChange={(val) => handleSelectChange('medicineType', val)}>
+                                <SelectTrigger id="medicineType"><SelectValue placeholder="Type" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Tablet">Tablet</SelectItem>
+                                    <SelectItem value="Syrup">Syrup</SelectItem>
+                                    <SelectItem value="Injection">Injection</SelectItem>
+                                    <SelectItem value="Ointment">Ointment</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="strength">Strength</Label>
+                            <Input id="strength" name="strength" value={formState.strength} onChange={handleInputChange} placeholder="e.g., 500mg" />
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="appointmentDate">Start Date</Label>
+                            <Input id="appointmentDate" name="appointmentDate" type="date" value={formState.appointmentDate} onChange={handleInputChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="endDate">End Date</Label>
+                            <Input id="endDate" name="endDate" type="date" value={formState.endDate} onChange={handleInputChange} />
+                        </div>
+                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="tabletsPerDay">Units/Day</Label>
+                            <Input id="tabletsPerDay" name="tabletsPerDay" type="number" value={formState.tabletsPerDay || ''} onChange={handleInputChange} placeholder="e.g., 2" />
                         </div>
                          <div className="space-y-2">
-                            <Label htmlFor="hist-duration">Duration (Days)</Label>
-                            <Input id="hist-duration" type="number" value={courseDurationDays} onChange={e => setCourseDurationDays(e.target.value)} placeholder="e.g., 14" />
+                            <Label htmlFor="courseDurationDays">Duration (Days)</Label>
+                            <Input id="courseDurationDays" name="courseDurationDays" type="number" value={formState.courseDurationDays || ''} onChange={handleInputChange} placeholder="e.g., 14" />
                         </div>
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="hist-notes">Condition Notes</Label>
-                        <Textarea id="hist-notes" value={conditionNotes} onChange={e => setConditionNotes(e.target.value)} />
+                     <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground"><Upload className="h-4 w-4"/> Upload Prescription Image</Button>
+
+
+                     {/* Tracking */}
+                     <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground pt-2"><Activity className="h-4 w-4"/>Tracking</h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="completionStatus">Completion Status</Label>
+                        <Select name="completionStatus" value={formState.completionStatus} onValueChange={(val: 'ongoing' | 'finished') => handleSelectChange('completionStatus', val)}>
+                            <SelectTrigger id="completionStatus"><SelectValue placeholder="Status" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ongoing">Ongoing</SelectItem>
+                                <SelectItem value="finished">Finished</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-                    <Button onClick={handleAddEntry} className="w-full">
+                     <div className="space-y-2">
+                        <Label htmlFor="followUpDate">Next Refill/Follow-up</Label>
+                        <Input id="followUpDate" name="followUpDate" type="date" value={formState.followUpDate} onChange={handleInputChange} />
+                    </div>
+
+
+                    {/* Notes & Reports */}
+                    <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground pt-2"><StickyNote className="h-4 w-4"/>Notes & Reports</h4>
+                     <div className="space-y-2">
+                        <Label htmlFor="notes">Personal Notes</Label>
+                        <Textarea id="notes" name="notes" value={formState.notes} onChange={handleInputChange} placeholder="e.g., Felt better after 2 days..."/>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="doctorsAdvice">Doctor's Notes/Advice</Label>
+                        <Textarea id="doctorsAdvice" name="doctorsAdvice" value={formState.doctorsAdvice} onChange={handleInputChange} />
+                    </div>
+                    <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground"><Paperclip className="h-4 w-4"/> Attach Lab Report</Button>
+
+
+                    <Button onClick={handleAddEntry} className="w-full mt-4">
                         <PlusCircle className="mr-2 h-4 w-4"/>
                         Add to History
                     </Button>
