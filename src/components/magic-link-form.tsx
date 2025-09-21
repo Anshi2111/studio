@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,10 +36,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
         description: 'Redirecting you to the dashboard...',
     });
 
-    // We don't need a delay, just redirect.
     router.push(redirectPath);
-
-    // No need to set loading to false as we are redirecting away.
   };
 
 
