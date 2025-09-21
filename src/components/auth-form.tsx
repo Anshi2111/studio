@@ -54,11 +54,16 @@ export function AuthForm({ userType }: AuthFormProps) {
       let errorMessage = 'An unexpected error occurred. Please try again.';
       switch (err.code) {
         case AuthErrorCodes.INVALID_PASSWORD:
+        case 'auth/wrong-password':
           errorMessage = 'Incorrect password. Please try again.';
           break;
+        case 'auth/user-not-found':
         case AuthErrorCodes.USER_DELETED:
-          errorMessage = 'This user account does not exist.';
+          errorMessage = 'No account found with this email address.';
           break;
+        case 'auth/invalid-credential':
+             errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+             break;
         case AuthErrorCodes.INVALID_EMAIL:
           errorMessage = 'Please enter a valid email address.';
           break;
