@@ -23,7 +23,7 @@ export function MagicLinkForm({ userType }: MagicLinkFormProps) {
   const title = userType === 'patient' ? 'Patient Portal' : 'Pharmacist Portal';
   const icon = userType === 'patient' ? <User className="h-8 w-8 text-primary" /> : <Briefcase className="h-8 w-8 text-primary" />;
 
-  const handleMagicLinkSignIn = async () => {
+  const handleMagicLinkSignIn = () => {
     setLoading(true);
     
     // In a real app, you would send a magic link via email.
