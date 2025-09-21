@@ -86,8 +86,9 @@ export function QRCodeScannerClient() {
              scannerRef.current.clear().catch(error => {
                 console.error("Failed to clear html5QrcodeScanner on unmount.", error);
              });
+        } finally {
+            scannerRef.current = null;
         }
-        scannerRef.current = null;
       }
     };
   }, [onScanSuccess]);

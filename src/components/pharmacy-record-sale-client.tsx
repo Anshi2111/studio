@@ -95,10 +95,14 @@ export function RecordSaleClient() {
 
     return () => {
       if (scannerRef.current) {
-          scannerRef.current.clear().catch(error => {
+          try {
+              scannerRef.current.clear();
+          } catch (error) {
               // It's okay if this fails.
-          });
-          scannerRef.current = null;
+              console.error("Failed to clear scanner on unmount:", error);
+          } finally {
+              scannerRef.current = null;
+          }
       }
     };
   }, [mode, scannedMedicine, onScanSuccess]);

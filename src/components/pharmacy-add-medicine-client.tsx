@@ -89,10 +89,14 @@ export function AddMedicineClient() {
 
     return () => {
       if (scannerRef.current) {
-         scannerRef.current.clear().catch(err => {
+         try {
+           scannerRef.current.clear();
+         } catch (err) {
             // It's okay if this fails, e.g. if the component was already unmounted.
-         });
-         scannerRef.current = null;
+            console.error("Failed to clear scanner on unmount:", err)
+         } finally {
+            scannerRef.current = null;
+         }
       }
     };
   }, [mode, onScanSuccess, showForm]);
