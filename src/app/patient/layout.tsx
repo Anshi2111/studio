@@ -22,7 +22,7 @@ const menuItems = [
   { href: '/patient/appointments', label: 'Appointments', icon: Calendar },
   { href: '/patient/medication-guide', label: 'Medication Guide', icon: BookHeart },
   { href: '/patient/my-medicines', label: 'My Medicines', icon: Pill },
-  { href: '/patient/health-record', label: 'Health Record', icon: History },
+  { href: '/patient/my-records', label: 'My Records', icon: History },
   { href: '/patient/reminders', label: 'Reminders', icon: Bell },
 ];
 
