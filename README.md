@@ -18,170 +18,57 @@ The platform helps patients manage medications, receive AI-powered medicine guid
 
 ---
 
-## 🚀 Live Demo
+## 📱 Patient Features
 
-🔗 **Visit Healthure:** https://healthur.netlify.app/
-
----
-
-# 📱 Patient Features
-
-### 🏠 Smart Dashboard
-- Personalized welcome dashboard
-- Upcoming appointments overview
-- Quick access to health information
-
-### 🤖 AI Medication Guide
-- Check potential drug interactions
-- Scan QR/Barcode for medicine details
-- AI-generated medicine explanations
-- Text-to-speech medicine summaries
-
-### 💊 Medicine Cabinet
-- Store purchased medicines
-- Add medicines manually
-- Automatic expiry tracking
-- Organized medicine history
-
-### 📋 Medical Records
-- Secure medical timeline
-- Prescriptions management
-- Diagnosis history
-- Doctor visit records
-
-### ⏰ Smart Reminders
-- Medicine dosage reminders
-- Expiry notifications
-- Never miss important medications
+- 🏠 **Smart Dashboard** – Personalized greetings and appointment overview.
+- 🤖 **AI Medication Guide** – Drug interaction checker, QR scanner, and AI voice summaries.
+- 💊 **Medicine Cabinet** – Track medicines with automatic expiry monitoring.
+- 📋 **Medical Records** – Secure timeline of diagnoses, prescriptions, and visits.
+- ⏰ **Reminders** – Dosage and expiry notifications.
 
 ---
 
-# 🏥 Pharmacist Features
+## 🏥 Pharmacist Features
 
-### 📊 Pharmacy Dashboard
-- Revenue overview
-- Low stock alerts
-- Prescription tracking
-- Business insights
-
-### 📦 Inventory Management
-- QR/Barcode medicine scanning
-- Manual stock management
-- Fast inventory updates
-
-### 🧾 Record Sales
-- Link purchases to patient accounts
-- Search via email or phone number
-- Automatic medicine safety tracking
-
-### 📈 Sales History
-- Complete transaction records
-- Sales reporting
-- Purchase analytics
+- 📊 **Pharmacy Dashboard** – Revenue insights, stock alerts, and prescription management.
+- 📦 **Inventory Management** – QR-based and manual stock updates.
+- 🧾 **Record Sales** – Link purchases to patient accounts for medication safety.
+- 📈 **Sales History** – Complete transaction logs and reporting.
 
 ---
 
-# 🛠️ Tech Stack
+## 🛠️ Tech Stack
 
 | Technology | Purpose |
-|------------|----------|
-| **Next.js 15 (App Router)** | Frontend Framework |
-| **Tailwind CSS** | Styling |
-| **ShadCN UI** | UI Components |
-| **Lucide React** | Icons |
-| **Firebase Authentication** | User Authentication |
-| **Firebase Firestore** | Database |
-| **Google Genkit** | AI Integration |
-| **Gemini 2.5 Flash** | Drug Analysis & AI Responses |
-| **Text-to-Speech (TTS)** | Audio Medicine Summaries |
-| **html5-qrcode** | QR & Barcode Scanning |
+|------------|---------|
+| Next.js 15 (App Router) | Frontend Framework |
+| Tailwind CSS | Styling |
+| ShadCN UI | UI Components |
+| Lucide Icons | Icons |
+| Firebase Authentication | Authentication |
+| Firebase Firestore | Database |
+| Google Genkit + Gemini 2.5 Flash | AI Features |
+| html5-qrcode | QR & Barcode Scanning |
 
 ---
 
-# 🤖 AI Features
+## 🤖 AI Capabilities
 
-- 💡 Drug interaction analysis
-- 📖 AI medicine explanations
-- 🔊 AI voice summaries
-- 📷 QR & Barcode medicine scanning
-- ⚠️ Safety alerts and recommendations
-
----
-
-# 🚀 Getting Started
-
-### Patient Login
-
-Navigate to:
-
-```
-/login/patient
-```
-
-Use any mock email and password to explore the patient dashboard.
-
-### Pharmacist Login
-
-Navigate to:
-
-```
-/login/pharmacist
-```
-
-Explore inventory management, sales tracking, and pharmacy operations.
+- Drug interaction analysis
+- AI medicine explanations
+- Text-to-speech summaries
+- QR & Barcode medicine scanning
+- Medication safety recommendations
 
 ---
 
-# 📂 Project Structure
+## 🚀 Getting Started
 
-```
-Healthure/
-│
-├── app/
-├── components/
-├── lib/
-├── hooks/
-├── public/
-├── styles/
-├── firebase/
-└── ai/
-```
+### Patient
+Visit `/login/patient` and use any mock email/password.
 
----
-
-# 🌟 Why Healthure?
-
-✅ AI-powered medicine guidance
-
-✅ Patient & pharmacist integrated platform
-
-✅ Medicine expiry tracking
-
-✅ QR & Barcode scanning
-
-✅ Smart medication reminders
-
-✅ Secure medical records
-
-✅ Firebase-powered authentication
-
-✅ Modern responsive UI
-
----
-
-# 📸 Live Preview
-
-🌐 https://healthur.netlify.app/
-
----
-
-# 👨‍💻 Built With
-
-- ❤️ Next.js
-- 🔥 Firebase
-- 🤖 Google Genkit (Gemini 2.5 Flash)
-- 🎨 Tailwind CSS
-- 🧩 ShadCN UI
+### Pharmacist
+Visit `/login/pharmacist` to access pharmacy tools.
 
 ---
 
